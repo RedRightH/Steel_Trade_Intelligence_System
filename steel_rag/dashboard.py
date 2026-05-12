@@ -511,82 +511,125 @@ with tab3:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with tab4:
-    EVAL_DIR = ROOT / "eval"
-    v1_path  = EVAL_DIR / "baseline_v1.json"
-    v1b_path = EVAL_DIR / "baseline_v1b.json"
+    import pandas as pd
+    EVAL_DIR_ = ROOT / "eval"
 
     def _load_eval(path: Path) -> dict | None:
         if path.exists():
-            with open(path) as f:
+            with open(path, encoding="utf-8") as f:
                 return json.load(f)
         return None
 
-    v1  = _load_eval(v1_path)
-    v1b = _load_eval(v1b_path)
+    v1b = _load_eval(EVAL_DIR_ / "baseline_v1b.json")
+    v2  = _load_eval(EVAL_DIR_ / "baseline_v2.json")
 
-    st.subheader("RAG Evaluation — Baseline Comparison")
+    st.subheader("RAG Evaluation")
 
-    if v1 and v1b:
-        s1  = v1["summary"];  r1  = {r["id"]: r for r in v1["results"]}
-        s1b = v1b["summary"]; r1b = {r["id"]: r for r in v1b["results"]}
+    # ── Run selector ─────────────────────────────────────────────────────────
+    runs = {}
+    if v1b: runs["v1b — 10 questions (no judge)"] = v1b
+    if v2:  runs["v2 — 25 questions + LLM judge"]  = v2
+    selected_run = st.selectbox("Select eval run", list(runs.keys())) if runs else None
 
-        total = s1b.get("total", 10)
+    if not runs:
+        st.warning("No eval results found. Run `python eval/run_eval.py --tag v2 --gt v2 --judge`")
+    else:
+        ev = runs[selected_run]
+        s  = ev["summary"]
+        results = ev["results"]
 
-        # ── Summary metrics ───────────────────────────────────────────────────
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Answered (v1)",  f"{s1['answered']}/{total}")
-        col2.metric("Answered (v1b)", f"{s1b['answered']}/{total}",
-                    delta=f"{s1b['answered'] - s1['answered']:+d}")
-        col3.metric("Source hit rate (v1b)",
-                    f"{s1b.get('source_hit_rate', 0):.0%}")
-        col4.metric("Avg latency (v1b)",
-                    f"{s1b.get('avg_latency_ms', 0):,}ms",
-                    delta=f"{s1b.get('avg_latency_ms',0) - s1.get('avg_latency_ms',3627):+,}ms",
-                    delta_color="inverse")
+        # ── Top-line metrics ──────────────────────────────────────────────────
+        col1, col2, col3, col4, col5 = st.columns(5)
+        col1.metric("Answered",         f"{s['answered']}/{s['total']}")
+        col2.metric("Answered rate",    f"{s['answered_rate']:.0%}")
+        col3.metric("Source hit rate",  f"{s.get('source_hit_rate',0) or 0:.0%}")
+        col4.metric("Routing accuracy", f"{s.get('routing_accuracy') or 0:.0%}"
+                    if s.get("routing_accuracy") else "—")
+        col5.metric("Avg latency",      f"{s.get('avg_latency_ms',0):,}ms")
+
+        # ── Judge scores (v2 only) ────────────────────────────────────────────
+        if s.get("avg_judge_score") is not None:
+            st.write("")
+            jc1, jc2, jc3, jc4 = st.columns(4)
+            jc1.metric("Avg judge score",  f"{s['avg_judge_score']:.2f} / 1.0")
+            jc2.metric("Faithfulness",     f"{s['avg_faithfulness']:.2f}")
+            jc3.metric("Relevance",        f"{s['avg_relevance']:.2f}")
+            jc4.metric("Completeness",     f"{s['avg_completeness']:.2f}")
+
+            # ── Judge score chart by question type ────────────────────────────
+            judged = [r for r in results if r.get("judge_score") is not None]
+            if judged:
+                import matplotlib
+                matplotlib.use("Agg")
+                import matplotlib.pyplot as plt
+
+                types = sorted(set(r.get("question_type","?") for r in judged))
+                f_scores = [sum(r["faithfulness"]  for r in judged if r.get("question_type")==t)
+                            / max(sum(1 for r in judged if r.get("question_type")==t),1)
+                            for t in types]
+                c_scores = [sum(r["completeness"]  for r in judged if r.get("question_type")==t)
+                            / max(sum(1 for r in judged if r.get("question_type")==t),1)
+                            for t in types]
+
+                x = range(len(types))
+                fig, ax = plt.subplots(figsize=(10, 4))
+                ax.bar([i-0.2 for i in x], f_scores, 0.35, label="Faithfulness", color="#3b82f6")
+                ax.bar([i+0.15 for i in x], c_scores, 0.35, label="Completeness", color="#f59e0b")
+                ax.set_xticks(list(x)); ax.set_xticklabels(types, rotation=20, ha="right")
+                ax.set_ylim(0, 1.05); ax.set_ylabel("Score")
+                ax.set_title("Judge scores by question type")
+                ax.legend(); ax.spines[["top","right"]].set_visible(False)
+                plt.tight_layout()
+                st.pyplot(fig); plt.close(fig)
 
         st.write("")
-
-        # ── Question table ────────────────────────────────────────────────────
         st.subheader("Question-level results")
-        import pandas as pd
+
+        # ── Build table ───────────────────────────────────────────────────────
         rows = []
-        for qid in sorted(r1b.keys()):
-            a  = r1.get(qid,  {})
-            b  = r1b[qid]
-            changed = (a.get("answered") != b["answered"])
-            rows.append({
-                "ID":       qid,
-                "Type":     b["type"],
-                "Question": b["question"][:70] + "…",
-                "v1 answered":  "✓" if a.get("answered") else "✗",
-                "v1b answered": "✓" if b["answered"] else "✗",
-                "Changed":  "⬆️ Fixed" if (b["answered"] and not a.get("answered"))
-                            else ("⬇️ Broke" if (not b["answered"] and a.get("answered"))
-                                  else "—"),
-                "Source hit":  "✓" if b.get("source_hit") else "✗",
-                "Latency ms":  b.get("latency_ms", "—"),
-            })
+        for r in sorted(results, key=lambda x: x["id"]):
+            row = {
+                "ID":       r["id"],
+                "Q-Type":   r.get("question_type","")[:16],
+                "Type":     r.get("type",""),
+                "Answered": "✓" if r["answered"] else "✗",
+                "Src hit":  ("✓" if r.get("source_hit") else "✗") if r.get("source_hit") is not None else "—",
+                "Route":    ("✓" if r.get("routing_correct") else "✗") if r.get("routing_correct") is not None else "—",
+                "Judge":    f"{r['judge_score']:.2f}" if r.get("judge_score") is not None else "—",
+                "Faith":    f"{r['faithfulness']:.2f}" if r.get("faithfulness") is not None else "—",
+                "Complete": f"{r['completeness']:.2f}" if r.get("completeness") is not None else "—",
+                "ms":       r.get("latency_ms","—"),
+                "Question": r["question"][:65] + "…",
+            }
+            rows.append(row)
+
         df_eval = pd.DataFrame(rows).set_index("ID")
         st.dataframe(df_eval, use_container_width=True)
 
-        # ── Refused questions deep-dive ───────────────────────────────────────
-        refused = [r for r in v1b["results"] if not r["answered"]]
+        # ── Refused questions ─────────────────────────────────────────────────
+        refused = [r for r in results if not r["answered"]]
         if refused:
             st.write("")
-            st.subheader(f"⚠️ Still refused ({len(refused)} questions)")
+            st.subheader(f"⚠️ Refused questions ({len(refused)})")
             for r in refused:
-                with st.expander(f"Q{r['id']}: {r['question'][:80]}"):
-                    st.write(f"**Type:** {r['type']}")
-                    st.write(f"**Top source retrieved:** {r['top_source']}")
+                with st.expander(f"Q{r['id']} [{r.get('question_type','')}]: {r['question'][:75]}"):
                     st.write(f"**Expected source:** {r.get('expected_src','—')}")
-                    st.info(
-                        "This question requires content not present in the current "
-                        "corpus. Consider adding the specific source document."
-                    )
+                    st.write(f"**Top retrieved:** {r.get('top_source','—')}")
+                    st.info("Add the source document to the corpus and re-run ingest.py to fix this.")
 
-    elif v1b:
-        st.info("baseline_v1.json not found — showing v1b only.")
-        s = v1b["summary"]
+        # ── Low-scoring answered questions ────────────────────────────────────
+        low = [r for r in results if r.get("judge_score") is not None and r["judge_score"] < 0.6]
+        if low:
+            st.write("")
+            st.subheader(f"📉 Low judge score (< 0.60) — {len(low)} questions")
+            for r in sorted(low, key=lambda x: x["judge_score"]):
+                with st.expander(f"Q{r['id']} score={r['judge_score']:.2f}: {r['question'][:70]}"):
+                    st.write(f"**Faithfulness:** {r['faithfulness']:.2f}  "
+                             f"**Relevance:** {r['relevance']:.2f}  "
+                             f"**Completeness:** {r['completeness']:.2f}")
+                    st.write(f"**Judge reasoning:** {r.get('judge_reason','')}")
+                    st.write(f"**Expected:** {r.get('expected_ans','')[:300]}")
+                    st.write(f"**Actual:** {r.get('actual_answer','')[:300]}")
         st.metric("Answered", f"{s['answered']}/{s.get('total',10)}")
         st.metric("Source hit rate", f"{s.get('source_hit_rate',0):.0%}")
     else:

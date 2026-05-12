@@ -1,0 +1,202 @@
+[
+  {
+    "id": 1,
+    "question": "Which countries are subject to anti-dumping investigation on electrogalvanized steel imports into India?",
+    "answer": "Korea RP, Japan, and Singapore are subject to the anti-dumping investigation concerning imports of electrogalvanized steel into India.",
+    "source_doc": "Anti-dumping investigation concerning imports of Electrogalvanized Steel from Korea RP, Japan and Singapore",
+    "type": "factual",
+    "question_type": "ANTI_DUMPING"
+  },
+  {
+    "id": 2,
+    "question": "What products are covered under the anti-dumping investigation on seamless tubes from China?",
+    "answer": "The investigation covers seamless tubes, pipes, and hollow profiles of iron, alloy or non-alloy steel originating in or exported from China PR.",
+    "source_doc": "Anti Dumping investigation on imports of Seamless Tubes etc. of Iron, Alloy or Non-Alloy Steel originating in or exported from China PR",
+    "type": "factual",
+    "question_type": "ANTI_DUMPING"
+  },
+  {
+    "id": 3,
+    "question": "How many countries are named in the anti-dumping investigation on flat rolled products of stainless steel?",
+    "answer": "The investigation names 12 countries: China PR, Korea RP, European Union, Japan, Taiwan, Indonesia, USA, Thailand, South Africa, UAE, Hong Kong, and Singapore.",
+    "source_doc": "Anti-dumping investigation concerning imports of Flat Rolled Products of Stainless Steel",
+    "type": "numeric",
+    "question_type": "ANTI_DUMPING"
+  },
+  {
+    "id": 4,
+    "question": "What is the QCO 2024 notification about in the context of Indian steel trade?",
+    "answer": "The QCO 2024 notification refers to Quality Control Orders issued under the Bureau of Indian Standards Act for steel products, mandating that steel imports and domestic production must conform to specified BIS standards before they can be sold in India.",
+    "source_doc": "QCO 2024_notification_Eng.pdf",
+    "type": "factual",
+    "question_type": "POLICY_OPPORTUNITY"
+  },
+  {
+    "id": 5,
+    "question": "What type of products are covered by the safeguard investigation on steel flat products?",
+    "answer": "The safeguard investigation covers imports of Non-Alloy and Alloy Steel Flat Products into India.",
+    "source_doc": "Initiation of safeguard investigation concerning imports of Non-Alloy and Alloy Steel Flat Products into India",
+    "type": "factual",
+    "question_type": "SAFEGUARD"
+  },
+  {
+    "id": 6,
+    "question": "What is the purpose of India's Foreign Trade Policy 2023?",
+    "answer": "India's Foreign Trade Policy 2023 (FTP 2023) aims to increase India's exports of goods and services, promote ease of doing business, boost emerging areas of trade, and facilitate India's integration into global value chains through various export promotion schemes and policy frameworks.",
+    "source_doc": "Foreign Trade Policy",
+    "type": "causal",
+    "question_type": "POLICY_OPPORTUNITY"
+  },
+  {
+    "id": 7,
+    "question": "What does PCN stand for and why is it used in anti-dumping investigations?",
+    "answer": "PCN stands for Product Control Number (or Product Classification Number). It is used in anti-dumping investigations to systematically classify different types/grades of the subject product so that like-for-like price comparisons can be made between the imported product and the domestically produced product.",
+    "source_doc": "Anti-dumping investigation concerning imports of Electrogalvanized Steel from Korea RP, Japan and Singapore",
+    "type": "causal",
+    "question_type": "ANTI_DUMPING"
+  },
+  {
+    "id": 8,
+    "question": "What is the difference between an anti-dumping measure and a safeguard measure?",
+    "answer": "An anti-dumping measure targets imports from specific countries found to be dumped (sold below normal value) causing material injury to domestic industry. A safeguard measure is a temporary restriction applied to imports from all countries when a sudden surge in imports causes or threatens serious injury to domestic industry, regardless of whether dumping is occurring.",
+    "source_doc": "Foreign Trade Policy",
+    "type": "comparative",
+    "question_type": "ANTI_DUMPING"
+  },
+  {
+    "id": 9,
+    "question": "What is the IS 2062 standard and which steel products does it apply to?",
+    "answer": "IS 2062 is the Bureau of Indian Standards specification for hot rolled medium and high tensile structural steel. It applies to structural steel products used in fabrication of bridges, transmission line towers, railway wagons, industrial structures, and similar applications.",
+    "source_doc": "PM_IS_2062.pdf",
+    "type": "factual",
+    "question_type": "POLICY_OPPORTUNITY"
+  },
+  {
+    "id": 10,
+    "question": "What triggers the initiation of a safeguard investigation in India?",
+    "answer": "A safeguard investigation in India is initiated when there is sufficient evidence of a surge in imports of a product causing or threatening serious injury to the domestic industry. A petition is filed by the domestic industry, and the Directorate General of Trade Remedies (DGTR) examines the evidence before deciding to initiate a formal investigation.",
+    "source_doc": "Initiation of safeguard investigation concerning imports of Non-Alloy and Alloy Steel Flat Products into India",
+    "type": "causal",
+    "question_type": "SAFEGUARD"
+  },
+  {
+    "id": 11,
+    "question": "What product is excluded from the scope of the anti-dumping investigation on seamless tubes from China?",
+    "answer": "High pressure gas cylinder seamless tubes are excluded from the scope of the product under consideration in the anti-dumping investigation on seamless tubes from China PR.",
+    "source_doc": "FF-NCV.pdf",
+    "type": "factual",
+    "question_type": "ANTI_DUMPING"
+  },
+  {
+    "id": 12,
+    "question": "What are the five specific product categories under the safeguard investigation on steel flat products?",
+    "answer": "The five categories are: (a) Hot Rolled coils, sheets and plates, (b) HR Plate Mill Plates, (c) Cold Rolled coils and sheets, (d) Metallic Coated Steel coils and sheets, and (e) Colour Coated coils and sheets.",
+    "source_doc": "Preliminary Findings_1.pdf",
+    "type": "factual",
+    "question_type": "SAFEGUARD"
+  },
+  {
+    "id": 13,
+    "question": "What organisation conducts anti-dumping and safeguard investigations in India?",
+    "answer": "The Directorate General of Trade Remedies (DGTR), under the Ministry of Commerce and Industry, conducts anti-dumping and safeguard investigations in India.",
+    "source_doc": "Preliminary Findings_1.pdf",
+    "type": "factual",
+    "question_type": "ANTI_DUMPING"
+  },
+  {
+    "id": 14,
+    "question": "How is normal value determined in India's anti-dumping investigations?",
+    "answer": "Normal value in India's anti-dumping investigations is typically the price at which the product is sold in the domestic market of the exporting country. If domestic sales are insufficient or below cost, normal value may be constructed based on cost of production plus reasonable amounts for selling, general and administrative expenses and profit.",
+    "source_doc": "FF-NCV.pdf",
+    "type": "causal",
+    "question_type": "ANTI_DUMPING"
+  },
+  {
+    "id": 15,
+    "question": "What is the injury margin concept in anti-dumping investigations?",
+    "answer": "The injury margin in anti-dumping investigations is the difference between the non-injurious price (NIP) of the domestic industry and the landed value of imports. It represents the price at which imports should have been priced to not cause injury to domestic industry. The lesser duty rule may apply, where the anti-dumping duty is limited to the injury margin if it is lower than the dumping margin.",
+    "source_doc": "FF-NCV.pdf",
+    "type": "causal",
+    "question_type": "ANTI_DUMPING"
+  },
+  {
+    "id": 16,
+    "question": "What raw materials does India's steel industry primarily depend on?",
+    "answer": "India's steel industry primarily depends on iron ore, coking coal, limestone, and scrap steel. India is largely self-sufficient in iron ore but heavily dependent on imports of coking coal, primarily from Australia and the USA.",
+    "source_doc": "Ministry of Steel Annual Report",
+    "type": "factual",
+    "question_type": "RAW_MATERIAL"
+  },
+  {
+    "id": 17,
+    "question": "What is India's steel production capacity and output according to recent annual reports?",
+    "answer": "India is the world's second largest steel producer. India's crude steel production has been growing steadily, with capacity expanding significantly under the National Steel Policy targets of 300 MT by 2030.",
+    "source_doc": "Ministry of Steel Annual Report",
+    "type": "factual",
+    "question_type": "RAW_MATERIAL"
+  },
+  {
+    "id": 18,
+    "question": "How does the EU Carbon Border Adjustment Mechanism affect Indian steel exports to Europe?",
+    "answer": "The EU CBAM imposes a carbon price on imported goods from sectors including steel, based on the carbon content of the product. Indian steel exporters to the EU must report embedded carbon emissions during the transitional phase and will eventually pay a carbon price equivalent to the EU ETS price. This increases the cost of Indian steel exports to the EU and incentivises decarbonisation of Indian steel production.",
+    "source_doc": "NCV FINAL SGD Steel 16.08.2025.pdf",
+    "type": "causal",
+    "question_type": "CBAM_COMPLIANCE"
+  },
+  {
+    "id": 19,
+    "question": "What are the reporting requirements for Indian steel exporters under EU CBAM?",
+    "answer": "Under EU CBAM, Indian steel exporters must report the quantity of goods exported and the embedded greenhouse gas emissions in those goods. During the transitional period (2023-2025), only reporting is required with no financial obligation. From 2026, importers must purchase CBAM certificates corresponding to the carbon price that would have been paid under EU carbon pricing rules.",
+    "source_doc": "NCV FINAL SGD Steel 16.08.2025.pdf",
+    "type": "factual",
+    "question_type": "CBAM_COMPLIANCE"
+  },
+  {
+    "id": 20,
+    "question": "What is the top export destination for Indian steel in the latest available month?",
+    "answer": "Italy is the top destination for Indian steel exports in the latest available month (February 2026), receiving approximately USD 87.5 million worth of steel.",
+    "source_doc": "TRADESTAT_XLSX",
+    "type": "factual",
+    "question_type": "DATA_ANALYSIS"
+  },
+  {
+    "id": 21,
+    "question": "Which continent receives the largest share of Indian steel exports?",
+    "answer": "Europe receives the largest share of Indian steel exports, accounting for the highest USD value among all continents.",
+    "source_doc": "TRADESTAT_XLSX",
+    "type": "factual",
+    "question_type": "DATA_ANALYSIS"
+  },
+  {
+    "id": 22,
+    "question": "What is India's month-on-month steel export growth rate in the latest available data?",
+    "answer": "India's steel exports in February 2026 were approximately USD 844 million, representing a year-on-year growth of about 22.6% compared to the same month in the previous year.",
+    "source_doc": "TRADESTAT_XLSX",
+    "type": "numeric",
+    "question_type": "DATA_ANALYSIS"
+  },
+  {
+    "id": 23,
+    "question": "Which country has shown the fastest growth in Indian steel exports over the last 6 months?",
+    "answer": "Turkey has shown the strongest positive trend in Indian steel exports over the last 6 months based on linear regression slope analysis.",
+    "source_doc": "TRADESTAT_XLSX",
+    "type": "factual",
+    "question_type": "DATA_ANALYSIS"
+  },
+  {
+    "id": 24,
+    "question": "What is India's MFN tariff rate on seamless tubes and pipes (HS 7304) in 2023?",
+    "answer": "India's MFN applied tariff on seamless tubes and pipes (HS 7304) is 10.0% in 2023.",
+    "source_doc": "WTO_WITS_MFN_CSV",
+    "type": "factual",
+    "question_type": "TARIFF_ANALYSIS"
+  },
+  {
+    "id": 25,
+    "question": "Which HS chapter has a higher average MFN tariff in India — HS 72 (Iron and Steel) or HS 73 (Articles of Iron or Steel)?",
+    "answer": "HS 73 (Articles of Iron or Steel) has a significantly higher average MFN tariff at approximately 10.98% in 2023, compared to HS 72 (Iron and Steel) at approximately 6.80% in 2023.",
+    "source_doc": "WTO_WITS_MFN_CSV",
+    "type": "comparative",
+    "question_type": "TARIFF_ANALYSIS"
+  }
+]
