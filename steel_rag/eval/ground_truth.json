@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "question": "Which countries are subject to anti-dumping investigation on electrogalvanized steel imports into India?",
+    "answer": "Korea RP, Japan, and Singapore are subject to the anti-dumping investigation concerning imports of electrogalvanized steel into India.",
+    "source_doc": "Anti-dumping investigation concerning imports of Electrogalvanized Steel from Korea RP, Japan and Singapore",
+    "type": "factual"
+  },
+  {
+    "id": 2,
+    "question": "What products are covered under the anti-dumping investigation on seamless tubes from China?",
+    "answer": "The investigation covers seamless tubes, pipes, and hollow profiles of iron, alloy or non-alloy steel originating in or exported from China PR.",
+    "source_doc": "Anti Dumping investigation on imports of Seamless Tubes etc. of Iron, Alloy or Non-Alloy Steel originating in or exported from China PR",
+    "type": "factual"
+  },
+  {
+    "id": 3,
+    "question": "How many countries are named in the anti-dumping investigation on flat rolled products of stainless steel?",
+    "answer": "The investigation names 12 countries: China PR, Korea RP, European Union, Japan, Taiwan, Indonesia, USA, Thailand, South Africa, UAE, Hong Kong, and Singapore.",
+    "source_doc": "Anti-dumping investigation concerning imports of Flat Rolled Products of Stainless Steel",
+    "type": "numeric"
+  },
+  {
+    "id": 4,
+    "question": "What is the QCO 2024 notification about in the context of Indian steel trade?",
+    "answer": "The QCO 2024 notification refers to Quality Control Orders issued under the Bureau of Indian Standards Act for steel products, mandating that steel imports and domestic production must conform to specified BIS standards before they can be sold in India.",
+    "source_doc": "QCO 2024_notification_Eng.pdf",
+    "type": "factual"
+  },
+  {
+    "id": 5,
+    "question": "What type of products are covered by the safeguard investigation on steel flat products?",
+    "answer": "The safeguard investigation covers imports of Non-Alloy and Alloy Steel Flat Products into India.",
+    "source_doc": "Initiation of safeguard investigation concerning imports of Non-Alloy and Alloy Steel Flat Products into India",
+    "type": "factual"
+  },
+  {
+    "id": 6,
+    "question": "What is the purpose of India's Foreign Trade Policy 2023?",
+    "answer": "India's Foreign Trade Policy 2023 (FTP 2023) aims to increase India's exports of goods and services, promote ease of doing business, boost emerging areas of trade, and facilitate India's integration into global value chains through various export promotion schemes and policy frameworks.",
+    "source_doc": "Foreign Trade Policy",
+    "type": "causal"
+  },
+  {
+    "id": 7,
+    "question": "What does PCN stand for and why is it used in anti-dumping investigations?",
+    "answer": "PCN stands for Product Control Number (or Product Classification Number). It is used in anti-dumping investigations to systematically classify different types/grades of the subject product so that like-for-like price comparisons can be made between the imported product and the domestically produced product.",
+    "source_doc": "Anti-dumping investigation concerning imports of Electrogalvanized Steel from Korea RP, Japan and Singapore",
+    "type": "causal"
+  },
+  {
+    "id": 8,
+    "question": "What is the difference between an anti-dumping measure and a safeguard measure?",
+    "answer": "An anti-dumping measure targets imports from specific countries found to be dumped (sold below normal value) causing material injury to domestic industry. A safeguard measure is a temporary restriction applied to imports from all countries when a sudden surge in imports causes or threatens serious injury to domestic industry, regardless of whether dumping is occurring.",
+    "source_doc": "Foreign Trade Policy",
+    "type": "comparative"
+  },
+  {
+    "id": 9,
+    "question": "What is the IS 2062 standard and which steel products does it apply to?",
+    "answer": "IS 2062 is the Bureau of Indian Standards specification for hot rolled medium and high tensile structural steel. It applies to structural steel products used in fabrication of bridges, transmission line towers, railway wagons, industrial structures, and similar applications.",
+    "source_doc": "PM_IS_2062.pdf",
+    "type": "factual"
+  },
+  {
+    "id": 10,
+    "question": "What triggers the initiation of a safeguard investigation in India?",
+    "answer": "A safeguard investigation in India is initiated when there is sufficient evidence of a surge in imports of a product causing or threatening serious injury to the domestic industry. A petition is filed by the domestic industry, and the Directorate General of Trade Remedies (DGTR) examines the evidence before deciding to initiate a formal investigation.",
+    "source_doc": "Initiation of safeguard investigation concerning imports of Non-Alloy and Alloy Steel Flat Products into India",
+    "type": "causal"
+  }
+]

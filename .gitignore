@@ -1,0 +1,53 @@
+# ── Environment ───────────────────────────────────────────────────────────────
+.env
+*.env
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── FAISS index — rebuild with: python steel_rag/ingest.py ───────────────────
+steel_rag/faiss_index/
+
+# ── Generated charts (re-created at runtime) ──────────────────────────────────
+steel_rag/charts/
+
+# ── Source documents (too large for git — store in cloud/local) ───────────────
+Base documents/
+
+# ── Classifier model weights ──────────────────────────────────────────────────
+steel_rag/classifier_model/
+
+# ── Jupyter / notebooks ───────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+.idea/
+.vscode/
+*.bak
+
+# ── Streamlit cache ───────────────────────────────────────────────────────────
+.streamlit/
+
+# ── Old one-off scripts ───────────────────────────────────────────────────────
+chinese_steel_exports_plot.png

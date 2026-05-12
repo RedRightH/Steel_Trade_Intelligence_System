@@ -1,0 +1,25 @@
+# ── Core RAG pipeline ─────────────────────────────────────────────────────────
+langchain-community>=0.2.0
+faiss-cpu>=1.7.4
+sentence-transformers>=2.7.0
+groq>=0.9.0
+python-dotenv>=1.0.0
+
+# ── Data & charting ───────────────────────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.26.0
+matplotlib>=3.7.0
+openpyxl>=3.1.0          # XLSX parsing for TRADESTAT export files
+
+# ── Dashboard ─────────────────────────────────────────────────────────────────
+streamlit>=1.35.0
+
+# ── Observability (optional) ──────────────────────────────────────────────────
+langfuse>=3.0.0
+
+# ── Validation ────────────────────────────────────────────────────────────────
+pydantic>=2.0.0
+
+# ── Legacy UN Comtrade scripts ────────────────────────────────────────────────
+comtradeapicall>=1.3.0
+requests>=2.31.0

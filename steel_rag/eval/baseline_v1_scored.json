@@ -1,0 +1,316 @@
+{
+  "summary": {
+    "avg_nli": 0.883,
+    "avg_llm": 0.98,
+    "agreement_count": 8,
+    "gate_nli_pass": true,
+    "gate_agree_pass": true
+  },
+  "results": [
+    {
+      "id": 1,
+      "question": "Which countries are subject to anti-dumping investigation on electrogalvanized steel imports into India?",
+      "answer": "Korea RP, Japan, and Singapore are subject to the anti-dumping investigation concerning imports of electrogalvanized steel into India.",
+      "source_doc": "Anti-dumping investigation concerning imports of Electrogalvanized Steel from Korea RP, Japan and Singapore",
+      "type": "factual",
+      "scores": {
+        "nli_faithfulness": 1.0,
+        "llm_faithfulness": 1.0,
+        "llm_reason": "The answer directly quotes and references the context from all three sources to support its claims about the countries subject to anti-dumping investigation on electrogalvanized steel imports into India.",
+        "agreement": true,
+        "nli_contradicted": 0,
+        "nli_entailed": 1,
+        "nli_total": 2,
+        "nli_details": [
+          {
+            "sentence": "According to Source 1, Notice for Oral Hearing_DVC_WEBEX_Electrogalvanized Steel_12.04.2022.pdf, the",
+            "label": "entailment",
+            "confidence": 0.602
+          },
+          {
+            "sentence": "This information is also confirmed in Source 2, List of registered interested parties and sharing of",
+            "label": "neutral",
+            "confidence": 0.977
+          }
+        ],
+        "latency_ms": 1309
+      },
+      "actual_answer": "According to Source 1, Notice for Oral Hearing_DVC_WEBEX_Electrogalvanized Steel_12.04.2022.pdf, the countries subject to anti-dumping investigation on electrogalvanized steel imports into India are Korea RP, Japan, and Singapore (Source 1, page 0, \"Subject: Anti-dumping investigation concerning imports of Electrogalvanized Steel originating in or exported from Korea RP, Japan, and Singapore\"). \n\nThis information is also confirmed in Source 2, List of registered interested parties and sharing of NCV_EGS_29.03.2022.pdf, and Source 3, NON-CONFIDENTIAL_FINAL FINDINGS_EG STEEL_27.07.2022.pdf, which also mention the same countries (Source 2, page 0, \"Subject: Anti-dumping investigation concerning imports of Electrogalvanized Steel from Korea RP, Japan, and Singapore\", and Source 3, page 0, \"Subject: Anti-dumping investigation concerning imports of “Electrogalvanized Steel” from Korea RP, Japan and Singapore\")."
+    },
+    {
+      "id": 2,
+      "question": "What products are covered under the anti-dumping investigation on seamless tubes from China?",
+      "answer": "The investigation covers seamless tubes, pipes, and hollow profiles of iron, alloy or non-alloy steel originating in or exported from China PR.",
+      "source_doc": "Anti Dumping investigation on imports of Seamless Tubes etc. of Iron, Alloy or Non-Alloy Steel originating in or exported from China PR",
+      "type": "factual",
+      "scores": {
+        "nli_faithfulness": 0.333,
+        "llm_faithfulness": 1.0,
+        "llm_reason": "Every claim in the answer is directly supported by the context from the provided sources.",
+        "agreement": false,
+        "nli_contradicted": 2,
+        "nli_entailed": 1,
+        "nli_total": 3,
+        "nli_details": [
+          {
+            "sentence": "According to [Source 3] seamless tube pipes NCV.pdf (page 0), the products covered under the anti-du",
+            "label": "contradiction",
+            "confidence": 0.977
+          },
+          {
+            "sentence": "Additionally, [Source 1] FF-NCV.pdf (page 16) notes that high pressure gas cylinder seamless tubes a",
+            "label": "contradiction",
+            "confidence": 0.586
+          },
+          {
+            "sentence": "Also, [Source 1] FF-NCV.pdf (page 16) mentions that secondary pipes, defective, rusted and used pipe",
+            "label": "entailment",
+            "confidence": 0.932
+          }
+        ],
+        "latency_ms": 1241
+      },
+      "actual_answer": "According to [Source 3] seamless tube pipes NCV.pdf (page 0), the products covered under the anti-dumping investigation are Seamless Tubes, pipes & Hollow profiles of Iron, Alloy or Non-Alloy Steel (other than cast iron and stainless steel), whether hot finished or cold drawn or cold rolled of an external diameter not exceeding 355.6 mm or 14\" OD\", originating in or exported from China PR. \n\nAdditionally, [Source 1] FF-NCV.pdf (page 16) notes that high pressure gas cylinder seamless tubes are excluded from the scope of the product under consideration. \n\nAlso, [Source 1] FF-NCV.pdf (page 16) mentions that secondary pipes, defective, rusted and used pipes are part of the product under consideration and cannot be excluded while examining the import statistics."
+    },
+    {
+      "id": 3,
+      "question": "How many countries are named in the anti-dumping investigation on flat rolled products of stainless steel?",
+      "answer": "The investigation names 12 countries: China PR, Korea RP, European Union, Japan, Taiwan, Indonesia, USA, Thailand, South Africa, UAE, Hong Kong, and Singapore.",
+      "source_doc": "Anti-dumping investigation concerning imports of Flat Rolled Products of Stainless Steel",
+      "type": "numeric",
+      "scores": {
+        "nli_faithfulness": 1.0,
+        "llm_faithfulness": 1.0,
+        "llm_reason": "The answer directly quotes and accurately represents the list of countries mentioned in Source 1.",
+        "agreement": true,
+        "nli_contradicted": 0,
+        "nli_entailed": 0,
+        "nli_total": 1,
+        "nli_details": [
+          {
+            "sentence": "According to Source 1 (NON-CONFIDENTIAL_FINAL FINDINGS_EG STEEL_27.07.2022.pdf, page 9), there are 1",
+            "label": "neutral",
+            "confidence": 0.655
+          }
+        ],
+        "latency_ms": 659
+      },
+      "actual_answer": "According to Source 1 (NON-CONFIDENTIAL_FINAL FINDINGS_EG STEEL_27.07.2022.pdf, page 9), there are 15 countries named in the anti-dumping investigation concerning imports of Flat Rolled Products of Stainless Steel, which are: China PR, Korea RP, European Union, Japan, Taiwan, Indonesia, USA, Thailand, South Africa, UAE, Hong Kong, Singapore, Mexico, Vietnam, and Malaysia."
+    },
+    {
+      "id": 4,
+      "question": "What is the QCO 2024 notification about in the context of Indian steel trade?",
+      "answer": "The QCO 2024 notification refers to Quality Control Orders issued under the Bureau of Indian Standards Act for steel products, mandating that steel imports and domestic production must conform to specified BIS standards before they can be sold in India.",
+      "source_doc": "QCO 2024_notification_Eng.pdf",
+      "type": "factual",
+      "scores": {
+        "nli_faithfulness": 1.0,
+        "llm_faithfulness": 1.0,
+        "llm_reason": "System correctly refused to answer (no hallucination).",
+        "agreement": true,
+        "nli_contradicted": 0,
+        "nli_entailed": 0,
+        "nli_total": 0,
+        "nli_details": [
+          {
+            "sentence": "I cannot answer this from the provided documents.",
+            "label": "refusal",
+            "confidence": 1.0
+          }
+        ],
+        "latency_ms": 0
+      },
+      "actual_answer": "I cannot answer this from the provided documents."
+    },
+    {
+      "id": 5,
+      "question": "What type of products are covered by the safeguard investigation on steel flat products?",
+      "answer": "The safeguard investigation covers imports of Non-Alloy and Alloy Steel Flat Products into India.",
+      "source_doc": "Initiation of safeguard investigation concerning imports of Non-Alloy and Alloy Steel Flat Products into India",
+      "type": "factual",
+      "scores": {
+        "nli_faithfulness": 1.0,
+        "llm_faithfulness": 1.0,
+        "llm_reason": "The answer directly quotes and accurately represents the information from the context in Source 1.",
+        "agreement": true,
+        "nli_contradicted": 0,
+        "nli_entailed": 1,
+        "nli_total": 1,
+        "nli_details": [
+          {
+            "sentence": "According to [Source 1] Preliminary Findings_1.pdf (page 7), the products under consideration in the",
+            "label": "entailment",
+            "confidence": 0.366
+          }
+        ],
+        "latency_ms": 834
+      },
+      "actual_answer": "According to [Source 1] Preliminary Findings_1.pdf (page 7), the products under consideration in the safeguard investigation are \"Non-Alloy and Alloy Steel Flat Products\" comprising of five product categories, namely: \n(a) Hot Rolled (“HR”) coils, sheets and plates, \n(b) HR Plate Mill Plates, \n(c) Cold Rolled (“CR”) coils and sheets, \n(d) Metallic Coated Steel coils and sheets, \n(e) Colour Coated coils and sheets, whether or not profiled, including Galvanneal, Coated with Zinc or Aluminium-Zinc or Zinc-Aluminium-Magnesium."
+    },
+    {
+      "id": 6,
+      "question": "What is the purpose of India's Foreign Trade Policy 2023?",
+      "answer": "India's Foreign Trade Policy 2023 (FTP 2023) aims to increase India's exports of goods and services, promote ease of doing business, boost emerging areas of trade, and facilitate India's integration into global value chains through various export promotion schemes and policy frameworks.",
+      "source_doc": "Foreign Trade Policy",
+      "type": "causal",
+      "scores": {
+        "nli_faithfulness": 1.0,
+        "llm_faithfulness": 1.0,
+        "llm_reason": "System correctly refused to answer (no hallucination).",
+        "agreement": true,
+        "nli_contradicted": 0,
+        "nli_entailed": 0,
+        "nli_total": 0,
+        "nli_details": [
+          {
+            "sentence": "I cannot answer this from the provided documents.",
+            "label": "refusal",
+            "confidence": 1.0
+          }
+        ],
+        "latency_ms": 0
+      },
+      "actual_answer": "I cannot answer this from the provided documents."
+    },
+    {
+      "id": 7,
+      "question": "What does PCN stand for and why is it used in anti-dumping investigations?",
+      "answer": "PCN stands for Product Control Number (or Product Classification Number). It is used in anti-dumping investigations to systematically classify different types/grades of the subject product so that like-for-like price comparisons can be made between the imported product and the domestically produced product.",
+      "source_doc": "Anti-dumping investigation concerning imports of Electrogalvanized Steel from Korea RP, Japan and Singapore",
+      "type": "causal",
+      "scores": {
+        "nli_faithfulness": 1.0,
+        "llm_faithfulness": 1.0,
+        "llm_reason": "System correctly refused to answer (no hallucination).",
+        "agreement": true,
+        "nli_contradicted": 0,
+        "nli_entailed": 0,
+        "nli_total": 0,
+        "nli_details": [
+          {
+            "sentence": "I cannot answer this from the provided documents.",
+            "label": "refusal",
+            "confidence": 1.0
+          }
+        ],
+        "latency_ms": 0
+      },
+      "actual_answer": "I cannot answer this from the provided documents."
+    },
+    {
+      "id": 8,
+      "question": "What is the difference between an anti-dumping measure and a safeguard measure?",
+      "answer": "An anti-dumping measure targets imports from specific countries found to be dumped (sold below normal value) causing material injury to domestic industry. A safeguard measure is a temporary restriction applied to imports from all countries when a sudden surge in imports causes or threatens serious injury to domestic industry, regardless of whether dumping is occurring.",
+      "source_doc": "Foreign Trade Policy",
+      "type": "comparative",
+      "scores": {
+        "nli_faithfulness": 1.0,
+        "llm_faithfulness": 0.9,
+        "llm_reason": "The answer is mostly supported by the context, with minor gaps in explicitly quoting the sources for the 'likeness' analysis explanation.",
+        "agreement": true,
+        "nli_contradicted": 0,
+        "nli_entailed": 2,
+        "nli_total": 5,
+        "nli_details": [
+          {
+            "sentence": "According to Source 1 (FF-NCV.pdf, page 16), the difference between an anti-dumping measure and a sa",
+            "label": "neutral",
+            "confidence": 0.49
+          },
+          {
+            "sentence": "Both aim to provide a level playing field to the domestic industry, but they differ in their applica",
+            "label": "neutral",
+            "confidence": 0.845
+          },
+          {
+            "sentence": "Safeguard duty is imposed on goods that enter in increased quantities and cause or threaten to cause",
+            "label": "neutral",
+            "confidence": 0.606
+          },
+          {
+            "sentence": "On the other hand, anti-dumping duty is imposed on dumped imported goods, where dumping occurs when ",
+            "label": "entailment",
+            "confidence": 0.629
+          },
+          {
+            "sentence": "Additionally, Source 2 (Preliminary Findings_1.pdf, page 11) and Source 3 (NCV FINAL SGD Steel 16.08",
+            "label": "entailment",
+            "confidence": 0.611
+          }
+        ],
+        "latency_ms": 2251
+      },
+      "actual_answer": "According to Source 1 (FF-NCV.pdf, page 16), the difference between an anti-dumping measure and a safeguard measure lies in their purpose and scope. Both aim to provide a level playing field to the domestic industry, but they differ in their application. \n\nSafeguard duty is imposed on goods that enter in increased quantities and cause or threaten to cause serious injury to the domestic industry producing like or directly competitive goods. \n\nOn the other hand, anti-dumping duty is imposed on dumped imported goods, where dumping occurs when goods are exported by a country to another country at a price lower than its normal value.\n\nAdditionally, Source 2 (Preliminary Findings_1.pdf, page 11) and Source 3 (NCV FINAL SGD Steel 16.08.2025.pdf, page 46) highlight that the analysis of \"likeness\" under the Anti-Dumping Agreement focuses on product characteristics, whereas the Agreement on Safeguards considers the competitive relationship between products."
+    },
+    {
+      "id": 9,
+      "question": "What is the IS 2062 standard and which steel products does it apply to?",
+      "answer": "IS 2062 is the Bureau of Indian Standards specification for hot rolled medium and high tensile structural steel. It applies to structural steel products used in fabrication of bridges, transmission line towers, railway wagons, industrial structures, and similar applications.",
+      "source_doc": "PM_IS_2062.pdf",
+      "type": "factual",
+      "scores": {
+        "nli_faithfulness": 1.0,
+        "llm_faithfulness": 1.0,
+        "llm_reason": "The answer directly quotes and accurately represents the information from the context in Source 1, PM_IS_2062.pdf, page 0.",
+        "agreement": true,
+        "nli_contradicted": 0,
+        "nli_entailed": 0,
+        "nli_total": 2,
+        "nli_details": [
+          {
+            "sentence": "According to the PM_IS_2062.pdf document (page 0), the IS 2062 standard applies to \"Hot Rolled Mediu",
+            "label": "neutral",
+            "confidence": 0.996
+          },
+          {
+            "sentence": "This is stated in the title of the product manual, which is \"Hot Rolled Medium and High Tensile Stru",
+            "label": "neutral",
+            "confidence": 0.995
+          }
+        ],
+        "latency_ms": 1124
+      },
+      "actual_answer": "According to the PM_IS_2062.pdf document (page 0), the IS 2062 standard applies to \"Hot Rolled Medium and High Tensile Structural Steel\" (Source 1, PM_IS_2062.pdf, page 0). This is stated in the title of the product manual, which is \"Hot Rolled Medium and High Tensile Structural Steel According to IS 2062:2011\"."
+    },
+    {
+      "id": 10,
+      "question": "What triggers the initiation of a safeguard investigation in India?",
+      "answer": "A safeguard investigation in India is initiated when there is sufficient evidence of a surge in imports of a product causing or threatening serious injury to the domestic industry. A petition is filed by the domestic industry, and the Directorate General of Trade Remedies (DGTR) examines the evidence before deciding to initiate a formal investigation.",
+      "source_doc": "Initiation of safeguard investigation concerning imports of Non-Alloy and Alloy Steel Flat Products into India",
+      "type": "causal",
+      "scores": {
+        "nli_faithfulness": 0.5,
+        "llm_faithfulness": 0.9,
+        "llm_reason": "The answer is mostly supported by the context, with minor gaps in directly quoting specific phrases from the sources.",
+        "agreement": false,
+        "nli_contradicted": 2,
+        "nli_entailed": 0,
+        "nli_total": 4,
+        "nli_details": [
+          {
+            "sentence": "According to [Source 1] Preliminary Findings_1.pdf (page 0), the initiation of a safeguard investiga",
+            "label": "neutral",
+            "confidence": 0.951
+          },
+          {
+            "sentence": "This is further supported by [Source 2] NCV FINAL SGD Steel 16.08.2025.pdf (page 1), which mentions ",
+            "label": "contradiction",
+            "confidence": 0.584
+          },
+          {
+            "sentence": "22/01/2024-DGTR dated 19 December 2024, in response to an application from the domestic industry.",
+            "label": "neutral",
+            "confidence": 0.97
+          },
+          {
+            "sentence": "Moreover, [Source 3] NCV FINAL SGD Steel 16.08.2025.pdf (page 33) highlights the importance of exami",
+            "label": "contradiction",
+            "confidence": 0.762
+          }
+        ],
+        "latency_ms": 1477
+      },
+      "actual_answer": "According to [Source 1] Preliminary Findings_1.pdf (page 0), the initiation of a safeguard investigation in India is triggered by an allegation of a \"recent, sudden, sharp and significant increase in the volume of imports, which has caused serious injury to the domestic industry in India.\" Additionally, the applicant must allege that imports have taken place in such increased quantities and under such circumstances as to cause and threaten to cause serious injury to the domestic industry. \n\nThis is further supported by [Source 2] NCV FINAL SGD Steel 16.08.2025.pdf (page 1), which mentions that the Authority initiated the investigation vide initiation notification No. 22/01/2024-DGTR dated 19 December 2024, in response to an application from the domestic industry. \n\nMoreover, [Source 3] NCV FINAL SGD Steel 16.08.2025.pdf (page 33) highlights the importance of examining unforeseen circumstances for the imposition of a safeguard measure, which is a requirement under the GATT."
+    }
+  ]
+}

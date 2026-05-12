@@ -1,0 +1,18 @@
+id,question,type,answered,source_hit,top_source,latency_ms,actual_answer
+1,Which countries are subject to anti-dumping investigation on electrogalvanized steel imports into India?,factual,True,True,Notice for Oral Hearing_DVC_WEBEX_Electrogalvanized Steel_12.04.2022.pdf,54362,"According to Source 1, Notice for Oral Hearing_DVC_WEBEX_Electrogalvanized Steel_12.04.2022.pdf, the countries subject to anti-dumping investigation on electrogalvanized steel imports into India are Korea RP, Japan, and Singapore (Source 1, page 0, ""Subject: Anti-dumping investigation concerning imp"
+2,What products are covered under the anti-dumping investigation on seamless tubes from China?,factual,True,True,FF-NCV.pdf,891,"According to [Source 3] seamless tube pipes NCV.pdf (page 0), the products covered under the anti-dumping investigation are Seamless Tubes, pipes & Hollow profiles of Iron, Alloy or Non-Alloy Steel (other than cast iron and stainless steel), whether hot finished or cold drawn or cold rolled, with an"
+3,How many countries are named in the anti-dumping investigation on flat rolled products of stainless steel?,numeric,True,True,NON-CONFIDENTIAL_FINAL FINDINGS_EG STEEL_27.07.2022.pdf,727,"According to Source 1 (NON-CONFIDENTIAL_FINAL FINDINGS_EG STEEL_27.07.2022.pdf, page 9), there are 15 countries named in the anti-dumping investigation concerning imports of Flat Rolled Products of Stainless Steel, which are: China PR, Korea RP, European Union, Japan, Taiwan, Indonesia, USA, Thailan"
+4,What is the QCO 2024 notification about in the context of Indian steel trade?,factual,False,False,MoS AR 2022-23 (1).pdf,355,I cannot answer this from the provided documents.
+5,What type of products are covered by the safeguard investigation on steel flat products?,factual,True,True,Preliminary Findings_1.pdf,789,"According to [Source 1] Preliminary Findings_1.pdf (page 7), the products under consideration in the safeguard investigation are ""Non-Alloy and Alloy Steel Flat Products"" comprising of five product categories, namely: 
+(a) Hot Rolled (“HR”) coils, sheets and plates, 
+(b) HR Plate Mill Plates, 
+(c) C"
+6,What is the purpose of India's Foreign Trade Policy 2023?,causal,False,False,FTP2023_Chapter01.pdf,364,I cannot answer this from the provided documents.
+7,What does PCN stand for and why is it used in anti-dumping investigations?,causal,False,True,Final PCN methodolody_Electrogalvanized Steel_14.10.2021_0.pdf,474,I cannot answer this from the provided documents.
+8,What is the difference between an anti-dumping measure and a safeguard measure?,comparative,True,False,FF-NCV.pdf,883,"According to FF-NCV.pdf (page 16), the difference between an anti-dumping measure and a safeguard measure lies in their purpose and scope. Both aim to provide a level playing field to the domestic industry, but they differ in their application. 
+
+Safeguard duty is imposed on goods that enter in incr"
+9,What is the IS 2062 standard and which steel products does it apply to?,factual,True,True,PM_IS_2062.pdf,805,"The IS 2062 standard applies to Hot Rolled Medium and High Tensile Structural Steel, as stated in the PM_IS_2062.pdf document (page 0): ""PRODUCT MANUAL FOR Hot Rolled Medium and High Tensile Structural Steel According to IS 2062:2011"". 
+
+Specifically, the document mentions that the title of the IS 2"
+10,What triggers the initiation of a safeguard investigation in India?,causal,True,True,Preliminary Findings_1.pdf,981,"According to [Source 1] Preliminary Findings_1.pdf (page 0), the initiation of a safeguard investigation in India is triggered by an allegation of a ""recent, sudden, sharp and significant increase in the volume of imports, which has caused serious injury to the domestic industry in India."" Additiona"
