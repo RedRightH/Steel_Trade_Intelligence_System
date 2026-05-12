@@ -1,5 +1,1 @@
-# packages.txt — apt packages installed by Streamlit Community Cloud
-# Keep this minimal; Python deps go in requirements.txt
-
-# Needed by sentence-transformers / torch on Linux
 libgomp1
