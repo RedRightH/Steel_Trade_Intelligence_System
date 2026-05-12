@@ -630,7 +630,3 @@ with tab4:
                     st.write(f"**Judge reasoning:** {r.get('judge_reason','')}")
                     st.write(f"**Expected:** {r.get('expected_ans','')[:300]}")
                     st.write(f"**Actual:** {r.get('actual_answer','')[:300]}")
-        st.metric("Answered", f"{s['answered']}/{s.get('total',10)}")
-        st.metric("Source hit rate", f"{s.get('source_hit_rate',0):.0%}")
-    else:
-        st.warning("No eval results found. Run `python eval/run_eval.py` first.")
