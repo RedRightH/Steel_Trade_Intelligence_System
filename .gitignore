@@ -26,8 +26,10 @@ steel_rag/faiss_index/
 # ── Generated charts (re-created at runtime) ──────────────────────────────────
 steel_rag/charts/
 
-# ── Source documents (too large for git — store in cloud/local) ───────────────
-Base documents/
+# ── Source documents ─────────────────────────────────────────────────────────
+# Exclude large PDFs (indexed in Pinecone) but commit the small structured data files
+"Base documents"/**/*.pdf
+"Base documents"/**/*.PDF
 
 # ── Classifier model weights ──────────────────────────────────────────────────
 steel_rag/classifier_model/
