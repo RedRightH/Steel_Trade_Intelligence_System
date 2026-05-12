@@ -144,17 +144,23 @@ No markdown, no explanation outside the JSON.
 """
 
 
-def classify_question(question: str) -> tuple[QuestionType, float, str]:
+def classify_question(question: str, memory=None) -> tuple[QuestionType, float, str]:
     """
-    Classify a question into one of 6 categories.
+    Classify a question into one of 7 categories.
+    Injects conversation history when memory is provided so follow-ups
+    (e.g. 'what about Vietnam?') resolve correctly.
     Returns (question_type, confidence, reason).
     """
+    user_content = question
+    if memory and not memory.is_empty:
+        ctx = memory.classifier_context(n=3)
+        user_content = f"{ctx}\n\nNew question: {question}"
     try:
         resp = _get_groq().chat.completions.create(
             model=GROQ_MODEL,
             messages=[
                 {"role": "system", "content": CLASSIFIER_SYSTEM},
-                {"role": "user",   "content": question},
+                {"role": "user",   "content": user_content},
             ],
             temperature=0.0,
             max_tokens=100,
@@ -196,16 +202,21 @@ Rules:
 """
 
 
-def _run_policy_agent(question: str, question_type: QuestionType) -> PolicyAnalystOutput:
+def _run_policy_agent(question: str, question_type: QuestionType, memory=None) -> PolicyAnalystOutput:
     from rag import rag_query
-    rag_result = rag_query(question)
+    # Enrich retrieval query with memory context so follow-ups retrieve correctly
+    retrieval_q = question
+    if memory and not memory.is_empty:
+        retrieval_q = f"{memory.agent_context(n=2)}\nCurrent question: {question}"
+    rag_result = rag_query(retrieval_q)
     answer     = rag_result["answer"]
     context    = rag_result["context_used"]
     sources    = [s["file_name"] for s in rag_result["sources"]]
 
     # Extract structured fields
+    mem_ctx = (memory.agent_context(n=2) + "\n\n") if (memory and not memory.is_empty) else ""
     extraction_prompt = (
-        f"RAG ANSWER:\n{answer}\n\n"
+        f"{mem_ctx}RAG ANSWER:\n{answer}\n\n"
         f"CONTEXT (first 2000 chars):\n{context[:2000]}"
     )
     try:
@@ -266,15 +277,19 @@ Rules:
 """
 
 
-def _run_supply_chain_agent(question: str, question_type: QuestionType) -> SupplyChainRiskOutput:
+def _run_supply_chain_agent(question: str, question_type: QuestionType, memory=None) -> SupplyChainRiskOutput:
     from rag import rag_query
-    rag_result = rag_query(question)
+    retrieval_q = question
+    if memory and not memory.is_empty:
+        retrieval_q = f"{memory.agent_context(n=2)}\nCurrent question: {question}"
+    rag_result = rag_query(retrieval_q)
     answer     = rag_result["answer"]
     context    = rag_result["context_used"]
     sources    = [s["file_name"] for s in rag_result["sources"]]
 
+    mem_ctx = (memory.agent_context(n=2) + "\n\n") if (memory and not memory.is_empty) else ""
     extraction_prompt = (
-        f"RAG ANSWER:\n{answer}\n\n"
+        f"{mem_ctx}RAG ANSWER:\n{answer}\n\n"
         f"CONTEXT (first 2000 chars):\n{context[:2000]}"
     )
     try:
@@ -327,10 +342,13 @@ Return ONLY valid JSON:
 """
 
 
-def _run_data_agent(question: str) -> DataAnalysisOutput:
+def _run_data_agent(question: str, memory=None) -> DataAnalysisOutput:
     from data_agent import query_export_data
 
-    result = query_export_data(question)
+    enriched_q = question
+    if memory and not memory.is_empty:
+        enriched_q = f"{memory.agent_context(n=2)}\nCurrent question: {question}"
+    result = query_export_data(enriched_q)
     answer = result["answer"]
 
     # Extract focus metadata
@@ -387,10 +405,13 @@ If no rates found, use empty lists and "N/A" for trend.
 """
 
 
-def _run_tariff_agent(question: str) -> TariffAnalysisOutput:
+def _run_tariff_agent(question: str, memory=None) -> TariffAnalysisOutput:
     from tariff_agent import query_tariff
 
-    result     = query_tariff(question)
+    enriched_q = question
+    if memory and not memory.is_empty:
+        enriched_q = f"{memory.agent_context(n=2)}\nCurrent question: {question}"
+    result     = query_tariff(enriched_q)
     answer     = result["answer"]
     chart_path = result.get("chart_path")
 
@@ -430,41 +451,43 @@ def _run_tariff_agent(question: str) -> TariffAnalysisOutput:
 
 # ── Main Router ───────────────────────────────────────────────────────────────
 
-def route_query(question: str, verbose: bool = False) -> RouterOutput:
+def route_query(question: str, verbose: bool = False, memory=None) -> RouterOutput:
     """
     Classify question → pick agent → return structured output.
 
     Args:
         question: Natural language question about India steel trade.
         verbose:  Print classification and timing info.
+        memory:   Optional ConversationMemory for multi-turn context.
 
     Returns:
         RouterOutput containing the structured agent result.
     """
     t_start = time.time()
 
-    # Step 1: Classify
-    qtype, conf, reason = classify_question(question)
+    # Step 1: Classify (with conversation context if available)
+    qtype, conf, reason = classify_question(question, memory=memory)
 
     if verbose:
-        print(f"  [Router] Type={qtype}  conf={conf:.2f}  reason={reason}")
+        mem_info = f"  memory={memory.turn_count} turns" if memory else ""
+        print(f"  [Router] Type={qtype}  conf={conf:.2f}  reason={reason}{mem_info}")
 
-    # Step 2: Route to agent
+    # Step 2: Route to agent (pass memory for context injection)
     if qtype == "DATA_ANALYSIS":
         agent_name = "DataAnalysisAgent"
-        result = _run_data_agent(question)
+        result = _run_data_agent(question, memory=memory)
 
     elif qtype == "TARIFF_ANALYSIS":
         agent_name = "TariffAnalysisAgent"
-        result = _run_tariff_agent(question)
+        result = _run_tariff_agent(question, memory=memory)
 
     elif qtype in ("ANTI_DUMPING", "SAFEGUARD", "POLICY_OPPORTUNITY"):
         agent_name = "PolicyAnalystAgent"
-        result = _run_policy_agent(question, qtype)
+        result = _run_policy_agent(question, qtype, memory=memory)
 
     else:  # RAW_MATERIAL, CBAM_COMPLIANCE
         agent_name = "SupplyChainRiskAgent"
-        result = _run_supply_chain_agent(question, qtype)
+        result = _run_supply_chain_agent(question, qtype, memory=memory)
 
     latency_ms = int((time.time() - t_start) * 1000)
 

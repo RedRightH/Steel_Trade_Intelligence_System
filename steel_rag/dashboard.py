@@ -91,124 +91,144 @@ EXAMPLE_QUESTIONS = [
     "Compare Vietnam and UAE steel export trends over the last year",
 ]
 
+# ── helper: render one assistant turn ─────────────────────────────────────────
+def _render_assistant_turn(ro):
+    from router import PolicyAnalystOutput, SupplyChainRiskOutput, DataAnalysisOutput, TariffAnalysisOutput
+    r = ro["result_obj"]
+    badge_cls, badge_label = BADGE_MAP.get(ro["question_type"], ("badge-data", ro["question_type"]))
+    st.markdown(
+        f'<span class="badge {badge_cls}">{badge_label}</span>'
+        f'<span style="color:#94a3b8;font-size:12px;">via {ro["agent_used"]} · {ro["latency_ms"]:,}ms</span>',
+        unsafe_allow_html=True,
+    )
+
+    if isinstance(r, PolicyAnalystOutput):
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Duty Type",      r.duty_type)
+        col2.metric("Duty Rate",      r.duty_rate)
+        col3.metric("Effective Date", r.effective_date)
+        col4.metric("Confidence",     f"{r.confidence:.0%}")
+        if r.countries:
+            st.write("**Countries:**", ", ".join(r.countries))
+        st.write(r.answer_text)
+        if r.source_docs:
+            with st.expander("📄 Sources"):
+                for doc in r.source_docs: st.write(f"• {doc}")
+
+    elif isinstance(r, SupplyChainRiskOutput):
+        risk_color = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(r.risk_level, "⚪")
+        col1, col2 = st.columns(2)
+        col1.metric("Risk Level", f"{risk_color} {r.risk_level}")
+        col2.metric("Commodity",  r.commodity)
+        if r.key_facts:
+            for fact in r.key_facts: st.write(f"• {fact}")
+        if r.recommended_action:
+            st.info(f"**Recommended action:** {r.recommended_action}")
+        st.write(r.answer_text)
+        if r.source_docs:
+            with st.expander("📄 Sources"):
+                for doc in r.source_docs: st.write(f"• {doc}")
+
+    elif isinstance(r, DataAnalysisOutput):
+        col1, col2 = st.columns(2)
+        col1.metric("Focus", r.analysis_focus)
+        col2.metric("Period", r.period)
+        if r.key_numbers:
+            for n in r.key_numbers: st.write(f"• {n}")
+        st.write(r.answer_text)
+        if r.chart_path and Path(r.chart_path).exists():
+            st.image(r.chart_path)
+
+    elif isinstance(r, TariffAnalysisOutput):
+        col1, col2, col3 = st.columns(3)
+        col1.metric("HS Codes", ", ".join(r.hs_codes) or "N/A")
+        col2.metric("Trend",    r.trend.capitalize())
+        col3.metric("Period",   r.period)
+        if r.tariff_rates:
+            for rate in r.tariff_rates: st.write(f"• {rate}")
+        st.write(r.answer_text)
+        if r.chart_path and Path(r.chart_path).exists():
+            st.image(r.chart_path)
+
+
 with tab1:
-    col_q, col_btn = st.columns([5, 1])
-    with col_q:
+    from router import route_query
+    from memory import ConversationMemory
+
+    # ── session state init ────────────────────────────────────────────────────
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []   # list of {role, content, ro_dict}
+    if "memory" not in st.session_state:
+        st.session_state.memory = ConversationMemory(max_turns=5)
+
+    # ── top bar: example picker + clear button ────────────────────────────────
+    col_ex, col_clear = st.columns([5, 1])
+    with col_ex:
         example = st.selectbox("Example questions", EXAMPLE_QUESTIONS,
-                               label_visibility="collapsed")
-        default_q = "" if example.startswith("Select") else example
-        question = st.text_area(
-            "Ask anything about India's steel trade",
-            value=default_q,
-            height=80,
-            placeholder="e.g. Which countries are subject to anti-dumping on electrogalvanized steel?",
+                               label_visibility="collapsed", key="chat_example")
+    with col_clear:
+        if st.button("🗑 Clear chat", use_container_width=True):
+            st.session_state.chat_history = []
+            st.session_state.memory.clear()
+            st.rerun()
+
+    # ── memory indicator ──────────────────────────────────────────────────────
+    mem = st.session_state.memory
+    if not mem.is_empty:
+        st.caption(f"💬 {mem.turn_count} turn{'s' if mem.turn_count > 1 else ''} in memory · "
+                   f"Last topic: **{mem.last_type}**")
+
+    st.divider()
+
+    # ── replay existing chat history ──────────────────────────────────────────
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg["role"]):
+            if msg["role"] == "user":
+                st.write(msg["content"])
+            else:
+                _render_assistant_turn(msg["ro"])
+
+    # ── chat input ────────────────────────────────────────────────────────────
+    # Pre-fill from example picker if user selected one
+    prefill = "" if example.startswith("Select") else example
+    question = st.chat_input("Ask anything about India's steel trade…")
+
+    # If no chat input but example selected and different from last question
+    if not question and prefill:
+        last_q = (st.session_state.chat_history[-1]["content"]
+                  if st.session_state.chat_history else "")
+        if prefill != last_q:
+            question = prefill
+
+    if question:
+        # Show user bubble
+        with st.chat_message("user"):
+            st.write(question)
+        st.session_state.chat_history.append({"role": "user", "content": question})
+
+        # Run router with memory
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking…"):
+                ro = route_query(question.strip(), memory=st.session_state.memory)
+
+            # Store serialisable snapshot for replay
+            ro_dict = {
+                "question":      ro.question,
+                "question_type": ro.question_type,
+                "agent_used":    ro.agent_used,
+                "latency_ms":    ro.latency_ms,
+                "result_obj":    ro.result,   # Pydantic object — stays in session RAM
+            }
+            _render_assistant_turn(ro_dict)
+
+        # Update memory and history
+        st.session_state.memory.add(
+            question          = ro.question,
+            answer            = ro.result.answer_text,
+            question_type     = ro.question_type,
+            agent_used        = ro.agent_used,
         )
-    with col_btn:
-        st.write("")
-        st.write("")
-        run = st.button("Ask ›", type="primary", use_container_width=True)
-
-    if run and question.strip():
-        with st.spinner("Routing question to the right agent…"):
-            from router import route_query, PolicyAnalystOutput, SupplyChainRiskOutput, DataAnalysisOutput, TariffAnalysisOutput
-            ro = route_query(question.strip())
-
-        # ── type badge + latency ──────────────────────────────────────────────
-        badge_cls, badge_label = BADGE_MAP.get(ro.question_type, ("badge-data", ro.question_type))
-        st.markdown(
-            f'<span class="badge {badge_cls}">{badge_label}</span>'
-            f'<span style="color:#94a3b8;font-size:12px;">via {ro.agent_used} · {ro.latency_ms:,}ms</span>',
-            unsafe_allow_html=True,
-        )
-        st.write("")
-
-        r = ro.result
-
-        # ── Policy / AD / Safeguard ───────────────────────────────────────────
-        if isinstance(r, PolicyAnalystOutput):
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Duty Type",      r.duty_type)
-            col2.metric("Duty Rate",      r.duty_rate)
-            col3.metric("Effective Date", r.effective_date)
-            col4.metric("Confidence",     f"{r.confidence:.0%}")
-
-            if r.countries:
-                st.write("**Countries involved:**", ", ".join(r.countries))
-            if r.product:
-                st.write("**Product:**", r.product)
-
-            st.divider()
-            st.subheader("Answer")
-            st.write(r.answer_text)
-
-            if r.source_docs:
-                with st.expander("📄 Source documents"):
-                    for doc in r.source_docs:
-                        st.write(f"• {doc}")
-
-        # ── Supply Chain / CBAM ───────────────────────────────────────────────
-        elif isinstance(r, SupplyChainRiskOutput):
-            risk_color = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(r.risk_level, "⚪")
-            col1, col2 = st.columns(2)
-            col1.metric("Risk Level", f"{risk_color} {r.risk_level}")
-            col2.metric("Commodity",  r.commodity)
-
-            if r.key_facts:
-                st.write("**Key facts:**")
-                for fact in r.key_facts:
-                    st.write(f"• {fact}")
-
-            if r.recommended_action:
-                st.info(f"**Recommended action:** {r.recommended_action}")
-
-            st.divider()
-            st.subheader("Answer")
-            st.write(r.answer_text)
-
-            if r.source_docs:
-                with st.expander("📄 Source documents"):
-                    for doc in r.source_docs:
-                        st.write(f"• {doc}")
-
-        # ── Data Analysis ─────────────────────────────────────────────────────
-        elif isinstance(r, DataAnalysisOutput):
-            col1, col2 = st.columns(2)
-            col1.metric("Analysis focus", r.analysis_focus)
-            col2.metric("Period",         r.period)
-
-            if r.key_numbers:
-                st.write("**Key numbers:**")
-                for n in r.key_numbers:
-                    st.write(f"• {n}")
-
-            st.divider()
-            st.subheader("Answer")
-            st.write(r.answer_text)
-
-            if r.chart_path and Path(r.chart_path).exists():
-                st.image(r.chart_path)
-
-        # ── Tariff Analysis ───────────────────────────────────────────────────
-        elif isinstance(r, TariffAnalysisOutput):
-            col1, col2, col3 = st.columns(3)
-            col1.metric("HS Codes",   ", ".join(r.hs_codes) or "N/A")
-            col2.metric("Trend",      r.trend.capitalize())
-            col3.metric("Period",     r.period)
-
-            if r.tariff_rates:
-                st.write("**Rates found:**")
-                for rate in r.tariff_rates:
-                    st.write(f"• {rate}")
-
-            st.divider()
-            st.subheader("Answer")
-            st.write(r.answer_text)
-
-            if r.chart_path and Path(r.chart_path).exists():
-                st.image(r.chart_path)
-
-    elif run:
-        st.warning("Please enter a question.")
+        st.session_state.chat_history.append({"role": "assistant", "ro": ro_dict})
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
