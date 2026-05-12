@@ -1,9 +1,14 @@
 # ── Core RAG pipeline ─────────────────────────────────────────────────────────
 langchain-community>=0.2.0
+langchain-text-splitters>=0.2.0
 faiss-cpu>=1.7.4
 sentence-transformers>=2.7.0
 groq>=0.9.0
 python-dotenv>=1.0.0
+
+# ── Vector DB — Pinecone (cloud) ──────────────────────────────────────────────
+# Uses native Pinecone SDK directly — no langchain-pinecone needed
+pinecone>=5.0.0
 
 # ── Data & charting ───────────────────────────────────────────────────────────
 pandas>=2.0.0

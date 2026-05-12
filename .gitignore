@@ -46,8 +46,10 @@ Thumbs.db
 .vscode/
 *.bak
 
-# ── Streamlit cache ───────────────────────────────────────────────────────────
-.streamlit/
+# ── Streamlit ─────────────────────────────────────────────────────────────────
+# Commit config.toml and secrets.toml.example, but never the real secrets file
+.streamlit/secrets.toml
+.streamlit/__pycache__/
 
 # ── Old one-off scripts ───────────────────────────────────────────────────────
 chinese_steel_exports_plot.png
