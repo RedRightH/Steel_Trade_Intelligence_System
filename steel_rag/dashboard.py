@@ -55,6 +55,47 @@ st.markdown("""
 # ── header ────────────────────────────────────────────────────────────────────
 st.title("🏭 India Steel Trade Intelligence Platform")
 st.caption("RAG · Multi-Agent Router · Export Analytics · MFN Tariff Analysis")
+
+# ── Live news pipeline status (sidebar) ───────────────────────────────────────
+with st.sidebar:
+    st.markdown("### 📡 Live News Feed")
+    _pipeline_log = ROOT / "pipeline_log.json"
+    if _pipeline_log.exists():
+        try:
+            import json as _json
+            _log = _json.loads(_pipeline_log.read_text(encoding="utf-8"))
+            _runs = _log.get("runs", [])
+            _seen = _log.get("seen_ids", [])
+            if _runs:
+                _last = _runs[-1]
+                _ts   = _last["timestamp"][:16].replace("T", " ")
+                st.success(f"Last run: **{_ts} UTC**")
+                st.metric("Articles indexed", len(_seen))
+                st.metric("Latest batch", f"{_last['upserted']} new")
+                # Show most recent articles
+                _recent = _last.get("articles", [])[:5]
+                if _recent:
+                    st.markdown("**Recent articles:**")
+                    for _a in _recent:
+                        st.markdown(
+                            f"- [{_a['title'][:55]}…]({_a['url']})",
+                            unsafe_allow_html=False,
+                        )
+            else:
+                st.info("No runs recorded yet.")
+        except Exception:
+            st.warning("Could not read pipeline log.")
+    else:
+        st.info("Pipeline not yet run.\n\n"
+                "```\npython steel_rag/classifier_pipeline.py --once\n```")
+    st.divider()
+    st.markdown("**Vector backend**")
+    try:
+        _use_pc = bool(os.getenv("PINECONE_API_KEY", "").strip())
+        st.markdown(f"{'🟢 Pinecone' if _use_pc else '🟡 FAISS (local)'}")
+    except Exception:
+        pass
+
 st.divider()
 
 # ── tabs ──────────────────────────────────────────────────────────────────────
