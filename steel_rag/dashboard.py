@@ -60,7 +60,7 @@ st.divider()
 # ── tabs ──────────────────────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4 = st.tabs([
     "🔍 Intelligence Query",
-    "📈 Export Trends",
+    "🔄 Trade Flows",
     "📊 Tariff Lookup",
     "🧪 Eval Report",
 ])
@@ -232,51 +232,70 @@ with tab1:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — Export Trends
+# TAB 2 — Trade Flows (Exports + Imports + Balance)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with tab2:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
     @st.cache_resource(show_spinner="Loading export data…")
     def _load_export():
         from data_agent import load_export_data
         return load_export_data()
 
+    @st.cache_resource(show_spinner="Loading import data…")
+    def _load_import():
+        from data_agent import load_import_data
+        return load_import_data()
+
     df_exp = _load_export()
+    df_imp = _load_import()
 
-    months_avail = sorted(df_exp["report_year"].astype(str) + "-" +
-                          df_exp["report_month_num"].astype(str).str.zfill(2))
-    date_range = f"{months_avail[0]} → {months_avail[-1]}"
-    n_countries = df_exp["country"].nunique()
+    # ── Top-line KPIs ─────────────────────────────────────────────────────────
+    from data_agent import get_yoy_summary, get_import_yoy_summary
+    exp_kpi = get_yoy_summary()
+    imp_kpi = get_import_yoy_summary()
 
-    st.subheader("Export Overview")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Months of data", df_exp[["report_year","report_month_num"]].drop_duplicates().shape[0])
-    c2.metric("Countries tracked", n_countries)
-    c3.metric("Period", date_range)
+    st.subheader("India Steel Trade — Latest Month Snapshot")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Exports",
+              f"${exp_kpi['monthly_curr_usd_mn']:.0f}M",
+              f"{exp_kpi['monthly_growth_pct']:+.1f}% YoY" if exp_kpi['monthly_growth_pct'] else None)
+    c2.metric("Imports",
+              f"${imp_kpi['monthly_curr_usd_mn']:.0f}M",
+              f"{imp_kpi['monthly_growth_pct']:+.1f}% YoY" if imp_kpi['monthly_growth_pct'] else None)
+    trade_balance = exp_kpi['monthly_curr_usd_mn'] - imp_kpi['monthly_curr_usd_mn']
+    c3.metric("Trade Balance",
+              f"${trade_balance:+.0f}M",
+              "Surplus" if trade_balance >= 0 else "Deficit")
+    c4.metric("Latest month", exp_kpi['latest_month'])
     st.write("")
 
-    subtab_top, subtab_trend, subtab_region, subtab_compare = st.tabs([
-        "🏆 Top Destinations",
-        "📉 Growing & Shrinking",
+    # ── Sub-tabs ──────────────────────────────────────────────────────────────
+    (subtab_exp, subtab_imp, subtab_balance,
+     subtab_trend, subtab_region, subtab_compare) = st.tabs([
+        "📤 Exports",
+        "📥 Imports",
+        "⚖️ Trade Balance",
+        "📉 Market Trends",
         "🌍 Regional Breakdown",
         "🔁 Country Comparison",
     ])
 
-    # ── Top destinations ──────────────────────────────────────────────────────
-    with subtab_top:
+    # ── Exports ───────────────────────────────────────────────────────────────
+    with subtab_exp:
         n_top = st.slider("Number of countries", 5, 20, 10, key="n_top")
         with st.spinner("Computing…"):
             from data_agent import get_latest_top_destinations
             top_df = get_latest_top_destinations(n=n_top)
         if not top_df.empty:
-            import matplotlib
-            matplotlib.use("Agg")
-            import matplotlib.pyplot as plt
             fig, ax = plt.subplots(figsize=(10, 5))
             bars = ax.barh(top_df["country"][::-1], top_df["usd_million"][::-1],
                            color="#3b82f6")
             ax.set_xlabel("USD Million (latest month)")
-            ax.set_title(f"Top {n_top} Export Destinations — Latest Month")
+            ax.set_title(f"Top {n_top} Export Destinations — {exp_kpi['latest_month']}")
             ax.spines[["top","right"]].set_visible(False)
             for bar, val in zip(bars, top_df["usd_million"][::-1]):
                 ax.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height()/2,
@@ -288,7 +307,78 @@ with tab2:
                 st.dataframe(top_df.rename(columns={"usd_million": "USD Million"}),
                              use_container_width=True)
 
-    # ── Growing & Shrinking markets ───────────────────────────────────────────
+    # ── Imports ───────────────────────────────────────────────────────────────
+    with subtab_imp:
+        n_imp = st.slider("Number of source countries", 5, 20, 10, key="n_imp")
+        with st.spinner("Computing…"):
+            from data_agent import get_latest_top_sources
+            imp_df = get_latest_top_sources(n=n_imp)
+        if not imp_df.empty:
+            fig, ax = plt.subplots(figsize=(10, 5))
+            bars = ax.barh(imp_df["country"][::-1], imp_df["usd_million"][::-1],
+                           color="#ef4444")
+            ax.set_xlabel("USD Million (latest month)")
+            ax.set_title(f"Top {n_imp} Steel Import Sources — {imp_kpi['latest_month']}")
+            ax.spines[["top","right"]].set_visible(False)
+            for bar, val in zip(bars, imp_df["usd_million"][::-1]):
+                ax.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height()/2,
+                        f"${val:.1f}M", va="center", fontsize=8)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
+
+            st.caption(f"YTD imports: ${imp_kpi['ytd_curr_usd_mn']:.0f}M "
+                       f"({imp_kpi['ytd_growth_pct']:+.1f}% vs prev FY)" if imp_kpi['ytd_growth_pct'] else "")
+            with st.expander("📋 Data table"):
+                st.dataframe(imp_df.rename(columns={"usd_million": "USD Million"}),
+                             use_container_width=True)
+
+    # ── Trade Balance ─────────────────────────────────────────────────────────
+    with subtab_balance:
+        bal_period = st.radio("Period", ["latest_month", "ytd"], horizontal=True,
+                              key="bal_period",
+                              format_func=lambda x: "Latest Month" if x == "latest_month" else "Year-to-Date")
+        n_bal = st.slider("Countries to show", 10, 30, 15, key="n_bal")
+        with st.spinner("Computing trade balance…"):
+            from data_agent import get_trade_balance
+            bal_df = get_trade_balance(period=bal_period)
+
+        if not bal_df.empty:
+            # Show top surplus and deficit countries
+            top_surplus  = bal_df.head(n_bal // 2)
+            top_deficit  = bal_df.tail(n_bal // 2).sort_values("balance_usd")
+
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+            # Surplus
+            ax1.barh(top_surplus["country"], top_surplus["balance_usd"], color="#10b981")
+            ax1.set_title(f"Top Surplus Countries\n(Exports > Imports)", fontsize=11)
+            ax1.set_xlabel("USD Million")
+            ax1.axvline(0, color="black", linewidth=0.8)
+            ax1.spines[["top","right"]].set_visible(False)
+
+            # Deficit
+            ax2.barh(top_deficit["country"], top_deficit["balance_usd"], color="#ef4444")
+            ax2.set_title(f"Top Deficit Countries\n(Imports > Exports)", fontsize=11)
+            ax2.set_xlabel("USD Million")
+            ax2.axvline(0, color="black", linewidth=0.8)
+            ax2.spines[["top","right"]].set_visible(False)
+
+            fig.suptitle(f"India Steel Trade Balance — "
+                         f"{'Latest Month' if bal_period=='latest_month' else 'YTD'}", fontsize=13)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
+
+            with st.expander("📋 Full trade balance table"):
+                st.dataframe(
+                    bal_df[["country","continent","exports_usd","imports_usd","balance_usd"]]
+                    .rename(columns={"exports_usd":"Exports $M","imports_usd":"Imports $M",
+                                     "balance_usd":"Balance $M","continent":"Continent"}),
+                    use_container_width=True
+                )
+
+    # ── Market Trends ─────────────────────────────────────────────────────────
     with subtab_trend:
         col_l, col_r = st.columns(2)
         lookback = col_l.slider("Lookback months", 3, 12, 6, key="lookback")
@@ -306,7 +396,6 @@ with tab2:
         with st.expander("📋 Raw trend data"):
             trends_raw = get_market_trends(lookback_months=lookback,
                                            min_avg_usd=min_usd, n=n_mkts*2)
-            # get_market_trends returns a dict with keys: period, growing, shrinking, all_trends
             trends_df = trends_raw.get("all_trends") if isinstance(trends_raw, dict) else trends_raw
             if trends_df is not None and not trends_df.empty:
                 st.caption(f"Period: {trends_raw.get('period','') if isinstance(trends_raw, dict) else ''}")
@@ -317,9 +406,9 @@ with tab2:
 
     # ── Regional Breakdown ────────────────────────────────────────────────────
     with subtab_region:
-        period = st.radio("Period", ["latest", "ytd"], horizontal=True,
+        period = st.radio("Period", ["latest_month", "ytd"], horizontal=True,
                           key="region_period",
-                          format_func=lambda x: "Latest Month" if x == "latest" else "Year-to-Date")
+                          format_func=lambda x: "Latest Month" if x == "latest_month" else "Year-to-Date")
         with st.spinner("Building regional chart…"):
             from data_agent import plot_regional_breakdown, get_regional_summary
             chart_path = str(ROOT / "charts" / "dash_regional.png")
@@ -345,9 +434,8 @@ with tab2:
         if selected:
             with st.spinner("Generating comparison…"):
                 from data_agent import compare_countries
-                cmp = compare_countries(selected)  # returns dict: chart_trend, chart_latest, stats
+                cmp = compare_countries(selected)
 
-            # compare_countries generates its own charts internally
             chart_trend  = cmp.get("chart_trend")
             chart_latest = cmp.get("chart_latest")
             if chart_trend and Path(chart_trend).exists():
