@@ -296,6 +296,7 @@ from groq import Groq
 
 # ── Config ────────────────────────────────────────────────────────────────────
 EXPORTS_DIR  = Path(__file__).parent.parent / "Base documents" / "India_Steel_exports"
+IMPORTS_DIR  = Path(__file__).parent.parent / "Base documents" / "India_Steel_imports"
 CHARTS_DIR   = Path(__file__).parent / "charts"
 GROQ_MODEL   = "llama-3.3-70b-versatile"
 
@@ -307,6 +308,7 @@ MONTH_MAP = {
 # ─────────────────────────────────────────────────────────────────────────────
 
 _df_exports: pd.DataFrame | None = None
+_df_imports: pd.DataFrame | None = None
 _groq_client = None
 
 
@@ -1153,6 +1155,237 @@ def get_yoy_summary() -> dict:
         "ytd_curr_usd_mn":      round(ytd_curr, 2),
         "ytd_prev_usd_mn":      round(ytd_prev, 2),
         "ytd_growth_pct":       round((ytd_curr - ytd_prev) / ytd_prev * 100, 2) if ytd_prev else None,
+    }
+
+
+# ── Import data functions ─────────────────────────────────────────────────────
+
+def load_import_data(force_reload: bool = False) -> pd.DataFrame:
+    """
+    Load and combine all TRADESTAT Import XLSX files.
+    Cached after first load. Same schema as export data.
+
+    Returns a DataFrame with columns:
+        report_month_num, report_year, fiscal_year, country,
+        monthly_curr_usd, monthly_prev_usd, monthly_growth_pct, monthly_curr_share,
+        ytd_curr_usd, ytd_prev_usd, ytd_growth_pct, ytd_curr_share, source_file
+    """
+    global _df_imports
+    if _df_imports is not None and not force_reload:
+        return _df_imports
+
+    xlsx_files = sorted(IMPORTS_DIR.glob("*.xlsx"))
+    if not xlsx_files:
+        raise FileNotFoundError(f"No XLSX files found in {IMPORTS_DIR}")
+
+    print(f"Loading {len(xlsx_files)} import XLSX files from {IMPORTS_DIR.name}/...")
+    frames = []
+    for f in xlsx_files:
+        try:
+            frames.append(_parse_single_xlsx(f))
+        except Exception as e:
+            print(f"  [WARN] Skipping {f.name}: {e}")
+
+    _df_imports = pd.concat(frames, ignore_index=True)
+    _df_imports = _df_imports.sort_values(
+        ["report_year", "report_month_num", "country"]
+    ).reset_index(drop=True)
+
+    print(f"  Loaded {len(_df_imports):,} rows | "
+          f"{_df_imports['source_file'].nunique()} months | "
+          f"{_df_imports['country'].nunique()} countries")
+    return _df_imports
+
+
+def get_latest_top_sources(n: int = 10) -> pd.DataFrame:
+    """Return top-n import source countries for the latest available month."""
+    df = load_import_data()
+    latest_year  = df["report_year"].max()
+    latest_month = df[df["report_year"] == latest_year]["report_month_num"].max()
+    latest = df[(df["report_year"] == latest_year) & (df["report_month_num"] == latest_month)]
+    return (latest.groupby("country")["monthly_curr_usd"]
+            .sum().nlargest(n).reset_index()
+            .rename(columns={"monthly_curr_usd": "usd_million"}))
+
+
+def get_import_yoy_summary() -> dict:
+    """Return overall YoY import growth for latest month and YTD."""
+    df = load_import_data()
+    latest_year  = df["report_year"].max()
+    latest_month = df[df["report_year"] == latest_year]["report_month_num"].max()
+    latest = df[(df["report_year"] == latest_year) & (df["report_month_num"] == latest_month)]
+
+    total_curr = latest["monthly_curr_usd"].sum()
+    total_prev = latest["monthly_prev_usd"].sum()
+    ytd_curr   = latest["ytd_curr_usd"].sum()
+    ytd_prev   = latest["ytd_prev_usd"].sum()
+
+    month_names = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"May",6:"Jun",
+                   7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov",12:"Dec"}
+    return {
+        "latest_month":         f"{month_names[latest_month]} {latest_year}",
+        "monthly_curr_usd_mn":  round(total_curr, 2),
+        "monthly_prev_usd_mn":  round(total_prev, 2),
+        "monthly_growth_pct":   round((total_curr - total_prev) / total_prev * 100, 2) if total_prev else None,
+        "ytd_curr_usd_mn":      round(ytd_curr, 2),
+        "ytd_prev_usd_mn":      round(ytd_prev, 2),
+        "ytd_growth_pct":       round((ytd_curr - ytd_prev) / ytd_prev * 100, 2) if ytd_prev else None,
+    }
+
+
+def get_trade_balance(period: str = "latest_month") -> pd.DataFrame:
+    """
+    Compute trade balance (exports - imports) by country for a given period.
+
+    Args:
+        period: "latest_month" | "ytd"
+
+    Returns DataFrame with columns:
+        country, exports_usd, imports_usd, balance_usd, continent
+    Sorted by balance_usd descending (largest surplus first).
+    """
+    df_exp = load_export_data()
+    df_imp = load_import_data()
+
+    # Use the most recent month common to both datasets
+    exp_latest_yr = df_exp["report_year"].max()
+    exp_latest_mo = df_exp[df_exp["report_year"] == exp_latest_yr]["report_month_num"].max()
+    imp_latest_yr = df_imp["report_year"].max()
+    imp_latest_mo = df_imp[df_imp["report_year"] == imp_latest_yr]["report_month_num"].max()
+
+    # Use the earlier of the two latest months (safest common period)
+    if (exp_latest_yr, exp_latest_mo) <= (imp_latest_yr, imp_latest_mo):
+        yr, mo = exp_latest_yr, exp_latest_mo
+    else:
+        yr, mo = imp_latest_yr, imp_latest_mo
+
+    val_col = "monthly_curr_usd" if period == "latest_month" else "ytd_curr_usd"
+
+    exp_sub = df_exp[(df_exp["report_year"] == yr) & (df_exp["report_month_num"] == mo)]
+    imp_sub = df_imp[(df_imp["report_year"] == yr) & (df_imp["report_month_num"] == mo)]
+
+    exp_agg = exp_sub.groupby("country")[val_col].sum().reset_index().rename(columns={val_col: "exports_usd"})
+    imp_agg = imp_sub.groupby("country")[val_col].sum().reset_index().rename(columns={val_col: "imports_usd"})
+
+    merged = pd.merge(exp_agg, imp_agg, on="country", how="outer").fillna(0)
+    merged["balance_usd"] = merged["exports_usd"] - merged["imports_usd"]
+    merged["continent"]   = merged["country"].map(lambda c: REGION_MAP.get(c, ("Other","Other"))[0])
+    merged = merged.sort_values("balance_usd", ascending=False).reset_index(drop=True)
+    return merged
+
+
+def query_import_data(question: str, save_chart_as: str | None = None) -> dict:
+    """
+    Answer a quantitative question about India's steel imports using LLM code-gen.
+    Same interface as query_export_data() but operates on the imports DataFrame.
+    """
+    df = load_import_data()
+
+    months = df[["report_year", "report_month_num"]].drop_duplicates().sort_values(
+        ["report_year", "report_month_num"]
+    )
+    month_names = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"May",6:"Jun",
+                   7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov",12:"Dec"}
+    month_list = [f"{month_names[r.report_month_num]}{r.report_year}"
+                  for r in months.itertuples()]
+    latest = df[df["report_year"] == df["report_year"].max()]
+    latest = latest[latest["report_month_num"] == latest["report_month_num"].max()]
+    top5 = (latest.groupby("country")["monthly_curr_usd"]
+            .sum().nlargest(5).round(2).to_dict())
+
+    data_summary = f"""DataFrame name: df
+Shape: {len(df):,} rows x {len(df.columns)} columns
+Period: {month_list[0]} to {month_list[-1]} ({len(month_list)} monthly snapshots)
+Countries: {df['country'].nunique()} unique
+
+Columns:
+  report_month_num  int   (1=Jan .. 12=Dec)
+  report_year       int   (2024, 2025, 2026)
+  fiscal_year       str   ('FY2024-25', 'FY2025-26')
+  country           str   (UPPER CASE, source country of steel imports)
+  monthly_curr_usd  float USD Million - imports in the report month (current year)
+  monthly_prev_usd  float USD Million - imports same month previous year
+  monthly_growth_pct float % YoY growth in monthly imports
+  monthly_curr_share float % share of total monthly imports
+  ytd_curr_usd      float USD Million - Apr to report_month cumulative (current FY)
+  ytd_prev_usd      float USD Million - Apr to report_month cumulative (prev FY)
+  ytd_growth_pct    float % YoY growth in YTD imports
+  ytd_curr_share    float % share of total YTD imports
+
+Top 5 import sources (latest month, USD Mn): {top5}
+
+Notes:
+- Values in USD Million. This is IMPORT data — 'country' is the origin of steel coming INTO India.
+- Missing data appears as NaN — use fillna(0) or dropna() appropriately.
+- Charts: use matplotlib. Save to '{CHARTS_DIR}/<name>.png'. Return chart_path in your JSON.
+"""
+
+    safe_stem = re.sub(r"[^\w]", "_", question[:40].lower())
+    chart_name = save_chart_as or safe_stem
+    chart_path = CHARTS_DIR / f"{chart_name}.png"
+
+    import_system = DATA_AGENT_SYSTEM.replace(
+        "specialising in India's steel export trade data",
+        "specialising in India's steel import trade data"
+    ).replace(
+        "monthly TRADESTAT export data",
+        "monthly TRADESTAT import data"
+    ).replace(
+        "`monthly_curr_usd` = exports in the report month",
+        "`monthly_curr_usd` = imports in the report month"
+    )
+
+    user_msg = f"""DATA SCHEMA:
+{data_summary}
+
+QUESTION: {question}
+
+Write pandas code to answer this question. If a chart would help visualise the answer, include it."""
+
+    try:
+        resp = _get_groq().chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[
+                {"role": "system", "content": import_system},
+                {"role": "user",   "content": user_msg},
+            ],
+            temperature=0.1,
+            max_tokens=1500,
+        )
+        raw = resp.choices[0].message.content.strip()
+
+        description, needs_chart, code = "", False, ""
+        desc_match  = re.search(r"DESCRIPTION:\s*(.+)", raw)
+        chart_match = re.search(r"NEEDS_CHART:\s*(true|false)", raw, re.IGNORECASE)
+        code_match  = re.search(r"CODE:\s*\n(.*)", raw, re.DOTALL)
+
+        if desc_match:  description = desc_match.group(1).strip()
+        if chart_match: needs_chart = chart_match.group(1).lower() == "true"
+        if code_match:
+            code = code_match.group(1).strip()
+            code = re.sub(r"\n```\s*$", "", code).strip()
+        if not code:
+            raise ValueError(f"No CODE section found: {raw[:300]}")
+
+    except Exception as e:
+        return {
+            "question": question, "answer": f"LLM error: {e}",
+            "chart_path": None, "needs_chart": False,
+            "code_used": "", "description": "", "error": str(e),
+        }
+
+    exec_result = _execute_code(code, df, chart_path)
+    final_chart = str(chart_path) if (exec_result["chart_generated"] and chart_path.exists()) else None
+
+    return {
+        "question":    question,
+        "answer":      exec_result["answer"],
+        "chart_path":  final_chart,
+        "needs_chart": needs_chart,
+        "code_used":   code,
+        "description": description,
+        "error":       exec_result["error"],
+        "stdout":      exec_result.get("stdout", ""),
     }
 
 
