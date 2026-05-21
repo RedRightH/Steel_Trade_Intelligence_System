@@ -1,0 +1,28 @@
+{
+  "seen_ids": [
+    "fc5342834a565a02",
+    "a51c27c671326b90"
+  ],
+  "runs": [
+    {
+      "timestamp": "2026-05-21T14:23:12.317982+00:00",
+      "new_found": 2,
+      "upserted": 2,
+      "elapsed_s": 18.8,
+      "articles": [
+        {
+          "title": "India remains the fastest-growing major steel producer: Goldman Sachs",
+          "feed": "Hindu BusinessLine — Markets/Commodities",
+          "label": "",
+          "url": "https://www.thehindubusinessline.com/markets/commodities/india-remains-the-fastest-growing-major-steel-producer-goldman-sachs/article70992651.ece"
+        },
+        {
+          "title": "Core sector growth hits two-month high at 1.7% in April driven by steel, cement and power",
+          "feed": "Hindu BusinessLine — Economy & Policy",
+          "label": "",
+          "url": "https://www.thehindubusinessline.com/economy/core-sector-growth-hits-two-month-high-at-17-in-april-driven-by-steel-cement-and-power/article71004646.ece"
+        }
+      ]
+    }
+  ]
+}
