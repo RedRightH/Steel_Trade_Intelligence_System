@@ -18,6 +18,7 @@ import os
 import sys
 import time
 import glob
+import pickle
 import hashlib
 from pathlib import Path
 
@@ -34,6 +35,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # ── Config ────────────────────────────────────────────────────────────────────
 BASE_DOCS_DIR      = Path(__file__).parent.parent / "Base documents"
+BM25_CORPUS_PATH   = Path(__file__).parent / "bm25_corpus.pkl"
 EMBED_MODEL        = "sentence-transformers/all-MiniLM-L6-v2"
 EMBED_DIM          = 384          # all-MiniLM-L6-v2 output dimension
 CHUNK_SIZE         = 800
@@ -156,6 +158,24 @@ def upsert_to_pinecone(chunks, embeddings, ids):
     print(f"Pinecone index stats: {stats.total_vector_count} vectors")
 
 
+def save_bm25_corpus(chunks: list):
+    """Save chunk texts to bm25_corpus.pkl for hybrid search in rag.py."""
+    corpus = [
+        {
+            "id":        _chunk_id(c.page_content, c.metadata),
+            "text":      c.page_content[:1000],
+            "file_name": c.metadata.get("file_name", "Unknown"),
+            "category":  c.metadata.get("category", ""),
+            "page":      str(c.metadata.get("page", "?")),
+        }
+        for c in chunks
+    ]
+    with open(BM25_CORPUS_PATH, "wb") as f:
+        pickle.dump(corpus, f)
+    size_mb = BM25_CORPUS_PATH.stat().st_size / 1024 / 1024
+    print(f"BM25 corpus saved: {len(corpus)} chunks → {BM25_CORPUS_PATH} ({size_mb:.1f} MB)")
+
+
 def main():
     print("=" * 60)
     print("STEEL RAG — Pinecone Ingestion Pipeline")
@@ -168,6 +188,7 @@ def main():
 
     embeddings, ids = embed_chunks(chunks)
     upsert_to_pinecone(chunks, embeddings, ids)
+    save_bm25_corpus(chunks)   # keep BM25 corpus in sync
 
     print(f"\nTotal time: {time.time()-t_start:.1f}s")
     print("=" * 60)

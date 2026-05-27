@@ -1,6 +1,12 @@
 """
 rag.py - Core RAG query function with hybrid vector store support.
 
+Retrieval pipeline (in order):
+  1. Dense search   — Pinecone (cloud) or FAISS (local), cosine similarity
+  2. BM25 search    — sparse keyword search over bm25_corpus.pkl (if present)
+  3. RRF merge      — Reciprocal Rank Fusion over dense + BM25 candidates
+  4. BGE reranker   — cross-encoder/ms-marco-MiniLM-L-6-v2 (if available)
+
 Vector store priority:
   1. Pinecone  — when PINECONE_API_KEY is set (Streamlit Cloud / production)
   2. FAISS     — local fallback for development
@@ -16,6 +22,7 @@ Usage:
 import os
 import sys
 import time
+import pickle
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -39,11 +46,14 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from groq import Groq
 
 # ── Config ────────────────────────────────────────────────────────────────────
-FAISS_INDEX_DIR = Path(__file__).parent / "faiss_index"
-EMBED_MODEL     = "sentence-transformers/all-MiniLM-L6-v2"
-GROQ_MODEL      = "llama-3.3-70b-versatile"
-TOP_K           = 3
-PINECONE_INDEX  = os.getenv("PINECONE_INDEX_NAME", "steel-rag")
+FAISS_INDEX_DIR  = Path(__file__).parent / "faiss_index"
+BM25_CORPUS_PATH = Path(__file__).parent / "bm25_corpus.pkl"
+EMBED_MODEL      = "sentence-transformers/all-MiniLM-L6-v2"
+RERANKER_MODEL   = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+GROQ_MODEL       = "llama-3.3-70b-versatile"
+TOP_K            = 3        # final results returned to LLM
+HYBRID_FETCH_K   = 10       # candidates fetched from each source before reranking
+PINECONE_INDEX   = os.getenv("PINECONE_INDEX_NAME", "steel-rag")
 
 # Auto-detect which backend to use
 _USE_PINECONE = bool(os.getenv("PINECONE_API_KEY", "").strip())
@@ -68,6 +78,9 @@ _LANGFUSE_ENABLED = bool(
 _embeddings   = None
 _vectorstore  = None
 _groq_client  = None
+_bm25_index   = None   # rank_bm25.BM25Okapi instance
+_bm25_docs    = None   # list of corpus dicts {text, file_name, category, page}
+_reranker     = None   # sentence_transformers.CrossEncoder instance
 
 
 def _get_embeddings():
@@ -176,6 +189,111 @@ def _get_groq():
     return _groq_client
 
 
+# ── BM25 sparse retrieval ─────────────────────────────────────────────────────
+
+def _get_bm25():
+    """Load BM25 index from bm25_corpus.pkl (lazy, cached). Returns (None, None) if missing."""
+    global _bm25_index, _bm25_docs
+    if _bm25_index is not None:
+        return _bm25_index, _bm25_docs
+    if not BM25_CORPUS_PATH.exists():
+        return None, None
+    try:
+        from rank_bm25 import BM25Okapi
+        with open(BM25_CORPUS_PATH, "rb") as f:
+            corpus = pickle.load(f)
+        _bm25_docs = corpus
+        tokenized  = [doc["text"].lower().split() for doc in corpus]
+        _bm25_index = BM25Okapi(tokenized)
+        print(f"[rag] BM25 index loaded: {len(corpus)} chunks")
+    except Exception as e:
+        print(f"[rag] BM25 load failed ({e}), falling back to dense-only")
+        return None, None
+    return _bm25_index, _bm25_docs
+
+
+def _bm25_search(query: str, k: int) -> list:
+    """Return top-k (Document, bm25_score) pairs. Empty list if corpus unavailable."""
+    from langchain_core.documents import Document
+    bm25, docs = _get_bm25()
+    if bm25 is None:
+        return []
+    tokens = query.lower().split()
+    scores  = bm25.get_scores(tokens)
+    top_idx = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
+    results = []
+    for idx in top_idx:
+        d = docs[idx]
+        doc = Document(
+            page_content=d["text"],
+            metadata={
+                "file_name": d.get("file_name", "Unknown"),
+                "category":  d.get("category", ""),
+                "page":      d.get("page", "?"),
+            },
+        )
+        results.append((doc, float(scores[idx])))
+    return results
+
+
+# ── RRF merge ─────────────────────────────────────────────────────────────────
+
+def _rrf_merge(dense: list, sparse: list, k: int = 60, top_n: int = TOP_K) -> list:
+    """
+    Reciprocal Rank Fusion — combine dense and sparse ranked lists.
+    Each result's RRF score = Σ 1/(k + rank).
+    Deduplication is by first 200 chars of page_content.
+    """
+    scores: dict  = {}
+    docs_map: dict = {}
+
+    for rank, (doc, _) in enumerate(dense):
+        key = doc.page_content[:200]
+        scores[key]   = scores.get(key, 0.0) + 1.0 / (k + rank + 1)
+        docs_map[key] = doc
+
+    for rank, (doc, _) in enumerate(sparse):
+        key = doc.page_content[:200]
+        scores[key]   = scores.get(key, 0.0) + 1.0 / (k + rank + 1)
+        if key not in docs_map:
+            docs_map[key] = doc
+
+    sorted_keys = sorted(scores, key=lambda x: scores[x], reverse=True)[:top_n]
+    return [(docs_map[key], scores[key]) for key in sorted_keys]
+
+
+# ── BGE cross-encoder reranker ────────────────────────────────────────────────
+
+def _get_reranker():
+    """Load cross-encoder reranker (lazy, cached). Returns None on failure."""
+    global _reranker
+    if _reranker is not None:
+        return _reranker
+    try:
+        from sentence_transformers import CrossEncoder
+        _reranker = CrossEncoder(RERANKER_MODEL)
+        print(f"[rag] Reranker loaded: {RERANKER_MODEL}")
+    except Exception as e:
+        print(f"[rag] Reranker load failed ({e}), skipping rerank step")
+        _reranker = False   # sentinel so we don't retry
+    return _reranker if _reranker else None
+
+
+def _rerank(query: str, candidates: list, top_n: int = TOP_K) -> list:
+    """Rerank candidates with cross-encoder. Falls back to input order on error."""
+    reranker = _get_reranker()
+    if reranker is None or not candidates:
+        return candidates[:top_n]
+    try:
+        pairs  = [(query, doc.page_content) for doc, _ in candidates]
+        scores = reranker.predict(pairs)
+        ranked = sorted(zip(candidates, scores), key=lambda x: x[1], reverse=True)
+        return [(item[0], float(s)) for item, s in ranked[:top_n]]
+    except Exception as e:
+        print(f"[rag] Rerank failed ({e}), using RRF order")
+        return candidates[:top_n]
+
+
 def _build_sources(raw_results):
     sources, context_parts = [], []
     for i, (doc, score) in enumerate(raw_results):
@@ -212,9 +330,31 @@ def rag_query(question: str, top_k: int = TOP_K) -> dict:
 def _rag_query_core(question: str, top_k: int) -> dict:
     t_total = time.time()
 
-    t_ret = time.time()
-    raw   = _get_vectorstore().similarity_search_with_score(question, k=top_k)
+    # ── Retrieval ──────────────────────────────────────────────────────────────
+    t_ret      = time.time()
+    fetch_k    = max(HYBRID_FETCH_K, top_k * 3)  # wider net for reranking
+
+    # 1. Dense (Pinecone / FAISS)
+    dense = _get_vectorstore().similarity_search_with_score(question, k=fetch_k)
+
+    # 2. BM25 sparse (if corpus available)
+    sparse = _bm25_search(question, k=fetch_k)
+
+    # 3. Merge
+    if sparse:
+        merged = _rrf_merge(dense, sparse, top_n=fetch_k)
+        retrieval_method = "hybrid_rrf"
+    else:
+        merged = dense[:fetch_k]
+        retrieval_method = "dense_only"
+
+    # 4. BGE reranker
+    raw = _rerank(question, merged, top_n=top_k)
+    if sparse:
+        retrieval_method += "+rerank"
+
     chunk_retrieval_ms = int((time.time() - t_ret) * 1000)
+
     sources, context_parts = _build_sources(raw)
     context  = "\n\n---\n\n".join(context_parts)
     messages = [
@@ -242,7 +382,8 @@ def _rag_query_core(question: str, top_k: int) -> dict:
             "completion_tokens": response.usage.completion_tokens,
             "total_tokens":      response.usage.total_tokens,
         },
-        "vector_backend": "pinecone" if _USE_PINECONE else "faiss",
+        "vector_backend":    "pinecone" if _USE_PINECONE else "faiss",
+        "retrieval_method":  retrieval_method,
     }
 
 
@@ -257,9 +398,18 @@ def _rag_query_traced(question: str, top_k: int) -> dict:
         t_total = time.time()
         lf.set_current_trace_io(input={"question": q, "top_k": k})
 
-        t_ret = time.time()
+        t_ret   = time.time()
+        fetch_k = max(HYBRID_FETCH_K, k * 3)
         with lf.start_as_current_observation(name="retrieval", as_type="retriever"):
-            raw = _get_vectorstore().similarity_search_with_score(q, k=k)
+            dense  = _get_vectorstore().similarity_search_with_score(q, k=fetch_k)
+            sparse = _bm25_search(q, k=fetch_k)
+            if sparse:
+                merged           = _rrf_merge(dense, sparse, top_n=fetch_k)
+                retrieval_method = "hybrid_rrf+rerank"
+            else:
+                merged           = dense[:fetch_k]
+                retrieval_method = "dense_only"
+            raw = _rerank(q, merged, top_n=k)
             chunk_retrieval_ms = int((time.time() - t_ret) * 1000)
             sources, context_parts = _build_sources(raw)
             lf.update_current_span(
@@ -271,7 +421,8 @@ def _rag_query_traced(question: str, top_k: int) -> dict:
                     for i, s in enumerate(sources)
                 ]},
                 metadata={"chunk_retrieval_ms": chunk_retrieval_ms,
-                          "backend": "pinecone" if _USE_PINECONE else "faiss"},
+                          "backend": "pinecone" if _USE_PINECONE else "faiss",
+                          "retrieval_method": retrieval_method},
             )
 
         context  = "\n\n---\n\n".join(context_parts)
@@ -309,6 +460,7 @@ def _rag_query_traced(question: str, top_k: int) -> dict:
             "prompt_tokens": pt, "completion_tokens": ct,
             "embed_model": EMBED_MODEL, "groq_model": GROQ_MODEL,
             "vector_backend": "pinecone" if _USE_PINECONE else "faiss",
+            "retrieval_method": retrieval_method,
         })
 
         return {
@@ -322,7 +474,8 @@ def _rag_query_traced(question: str, top_k: int) -> dict:
             "token_counts": {
                 "prompt_tokens": pt, "completion_tokens": ct, "total_tokens": tt,
             },
-            "vector_backend": "pinecone" if _USE_PINECONE else "faiss",
+            "vector_backend":   "pinecone" if _USE_PINECONE else "faiss",
+            "retrieval_method": retrieval_method,
         }
 
     result = _inner(question, top_k)
@@ -331,10 +484,11 @@ def _rag_query_traced(question: str, top_k: int) -> dict:
 
 
 def _print_result(result: dict):
-    backend = result.get("vector_backend", "?")
+    backend  = result.get("vector_backend", "?")
+    ret_mode = result.get("retrieval_method", "?")
     print("\n" + "=" * 60)
     print(f"Q: {result['question']}")
-    print(f"Backend: {backend}")
+    print(f"Backend: {backend}  |  Retrieval: {ret_mode}")
     print("=" * 60)
     print(f"\nA: {result['answer']}")
     lat = result.get("latency", {})
