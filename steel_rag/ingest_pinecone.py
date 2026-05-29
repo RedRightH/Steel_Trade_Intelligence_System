@@ -32,6 +32,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_core.documents import Document
 
 # ── Config ────────────────────────────────────────────────────────────────────
 BASE_DOCS_DIR      = Path(__file__).parent.parent / "Base documents"
@@ -53,6 +54,28 @@ def _chunk_id(chunk_text: str, meta: dict) -> str:
     return hashlib.md5(raw.encode()).hexdigest()
 
 
+def _load_pdf_markitdown(path: str) -> list:
+    """Load a PDF via MarkItDown (better table/layout extraction) → list of Document."""
+    try:
+        from markitdown import MarkItDown
+        md = MarkItDown()
+        result = md.convert(path)
+        text = result.text_content or ""
+        if not text.strip():
+            return []
+        # MarkItDown returns full-doc text; wrap as single Document
+        return [Document(
+            page_content=text,
+            metadata={
+                "category":  Path(path).parent.name,
+                "file_name": Path(path).name,
+                "page":      0,
+            }
+        )]
+    except Exception as e:
+        raise RuntimeError(f"MarkItDown failed: {e}") from e
+
+
 def load_and_chunk() -> list:
     pdf_paths = list(set(
         glob.glob(str(BASE_DOCS_DIR / "**" / "*.pdf"), recursive=True)
@@ -64,25 +87,34 @@ def load_and_chunk() -> list:
     for path in sorted(pdf_paths):
         rel = os.path.relpath(path, BASE_DOCS_DIR)
         try:
-            pages = PyPDFLoader(path).load()
-            for p in pages:
-                p.metadata["category"]  = Path(path).parent.name
-                p.metadata["file_name"] = Path(path).name
-            docs.extend(pages)
-            print(f"  [OK] {rel}  ({len(pages)} pages)")
-        except Exception as e:
-            failed.append(rel)
-            print(f"  [FAIL] {rel} — {e}")
+            # ── Primary: MarkItDown (preserves tables as markdown) ────────────
+            pages = _load_pdf_markitdown(path)
+            loader = "markitdown"
+        except Exception as md_err:
+            # ── Fallback: PyPDFLoader ─────────────────────────────────────────
+            try:
+                pages = PyPDFLoader(path).load()
+                for p in pages:
+                    p.metadata["category"]  = Path(path).parent.name
+                    p.metadata["file_name"] = Path(path).name
+                loader = "pypdf"
+            except Exception as e:
+                failed.append(rel)
+                print(f"  [FAIL] {rel} — {e}")
+                continue
+
+        docs.extend(pages)
+        print(f"  [OK/{loader}] {rel}  ({len(pages)} doc(s))")
 
     if failed:
-        print(f"\nFailed: {failed}")
+        print(f"\nFailed to load: {failed}")
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP,
         separators=["\n\n", "\n", ". ", " ", ""],
     )
     chunks = splitter.split_documents(docs)
-    print(f"\n{len(docs)} pages → {len(chunks)} chunks")
+    print(f"\n{len(docs)} documents → {len(chunks)} chunks")
     return chunks
 
 

@@ -24,6 +24,9 @@ feedparser>=6.0.0
 apscheduler>=3.10.0
 beautifulsoup4>=4.12.0
 
+# ── Document parsing ──────────────────────────────────────────────────────────
+markitdown[pdf]>=0.1.0    # Microsoft MarkItDown — PDF/XLSX/DOCX → Markdown (better table extraction)
+
 # ── Hybrid search ─────────────────────────────────────────────────────────────
 rank_bm25>=0.2.2          # BM25 sparse retrieval (pairs with dense for RRF fusion)
 
