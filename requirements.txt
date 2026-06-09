@@ -34,6 +34,10 @@ rank_bm25>=0.2.2          # BM25 sparse retrieval (pairs with dense for RRF fusi
 statsmodels>=0.14.0       # OLS regression for gravity model coefficients
 xgboost>=2.0.0            # XGBoost for non-linear trade flow predictions
 
+# ── Futures & forecasting ──────────────────────────────────────────────────────
+yfinance>=0.2.0           # Yahoo Finance — HRC futures, steel ETFs, Indian steel stocks
+prophet>=1.1.0            # Meta Prophet — 30/60-day price forecasting
+
 # ── Observability (optional) ──────────────────────────────────────────────────
 langfuse>=3.0.0
 

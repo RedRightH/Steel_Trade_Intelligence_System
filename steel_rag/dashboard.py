@@ -100,11 +100,12 @@ with st.sidebar:
 st.divider()
 
 # ── tabs ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🔍 Intelligence Query",
     "🔄 Trade Flows",
     "📊 Tariff Lookup",
     "🧪 Eval Report",
+    "📈 Futures & Impact",
 ])
 
 
@@ -760,3 +761,344 @@ with tab4:
                     st.write(f"**Judge reasoning:** {r.get('judge_reason','')}")
                     st.write(f"**Expected:** {r.get('expected_ans','')[:300]}")
                     st.write(f"**Actual:** {r.get('actual_answer','')[:300]}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TAB 5 — Futures & News Impact
+# ═══════════════════════════════════════════════════════════════════════════════
+
+with tab5:
+    st.subheader("📈 Steel Futures & News Impact Analyzer")
+
+    @st.cache_data(ttl=3600, show_spinner="Fetching steel market data…")
+    def _load_futures_snapshot():
+        from steel_futures import get_futures_snapshot
+        return get_futures_snapshot()
+
+    @st.cache_data(ttl=3600, show_spinner="Loading price history…")
+    def _load_ticker_history(ticker: str):
+        from steel_futures import fetch_ticker, compute_technicals
+        df = fetch_ticker(ticker, period="1y")
+        if not df.empty:
+            return compute_technicals(df)
+        return df
+
+    # ── Top KPI row ───────────────────────────────────────────────────────────
+    try:
+        snap = _load_futures_snapshot()
+        prices = snap.get("prices", {})
+        fc = snap.get("hrc_forecast", {})
+
+        # KPI cards — HRC futures first, then Indian stocks
+        priority = ["HRC=F", "TATASTEEL.NS", "SAIL.NS", "JSWSTEEL.NS", "SLX", "MT", "NUE"]
+        ordered  = [t for t in priority if t in prices] + [t for t in prices if t not in priority]
+        cols = st.columns(len(ordered))
+        for col, ticker in zip(cols, ordered):
+            p = prices[ticker]
+            arrow = "▲" if p["chg_pct_1d"] >= 0 else "▼"
+            color = "green" if p["chg_pct_1d"] >= 0 else "red"
+            col.metric(
+                label=f"{p['name']}",
+                value=f"{p['last']:,.2f} {p['currency']}",
+                delta=f"{arrow} {p['chg_pct_1d']:+.2f}% (1d)",
+            )
+
+        st.caption(f"Data via Yahoo Finance · Last updated: {snap['last_updated'][:16].replace('T',' ')} UTC")
+        st.divider()
+    except Exception as e:
+        st.error(f"Could not load futures snapshot: {e}")
+        st.stop()
+
+    # ── Sub-tabs ──────────────────────────────────────────────────────────────
+    ft1, ft2, ft3 = st.tabs([
+        "📊 Price Charts & Forecast",
+        "📰 News Impact Analyzer",
+        "🔮 Scenario Comparison",
+    ])
+
+    # ────────────────────────────────────────────────────────────────────────
+    # Sub-tab 1 — Price Charts & Forecast
+    # ────────────────────────────────────────────────────────────────────────
+    with ft1:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import matplotlib.gridspec as gridspec
+        import pandas as pd
+
+        ticker_opts = {v["name"]: k for k, v in
+                       __import__("steel_futures", fromlist=["TICKERS"]).TICKERS.items()
+                       if k in prices}
+        sel_name   = st.selectbox("Select instrument", list(ticker_opts.keys()), key="fut_sel")
+        sel_ticker = ticker_opts[sel_name]
+
+        df_t = _load_ticker_history(sel_ticker)
+
+        if not df_t.empty:
+            # ── Price + MA chart ──────────────────────────────────────────────
+            fig = plt.figure(figsize=(12, 8))
+            gs  = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 1], hspace=0.05)
+            ax1 = fig.add_subplot(gs[0])
+            ax2 = fig.add_subplot(gs[1], sharex=ax1)
+            ax3 = fig.add_subplot(gs[2], sharex=ax1)
+
+            close = df_t["Close"].dropna()
+            ax1.plot(close.index, close, color="#1e40af", linewidth=1.4, label="Close")
+            if "MA20" in df_t.columns:
+                ax1.plot(df_t.index, df_t["MA20"], color="#f59e0b", linewidth=1, linestyle="--", label="MA20")
+                ax1.plot(df_t.index, df_t["MA50"], color="#ef4444", linewidth=1, linestyle="--", label="MA50")
+                ax1.fill_between(df_t.index, df_t["BB_lower"], df_t["BB_upper"],
+                                 alpha=0.08, color="#6366f1", label="BB ±2σ")
+
+            # Add Prophet forecast if this is HRC=F
+            if sel_ticker == "HRC=F" and fc:
+                fc_df = fc.get("forecast")
+                if fc_df is not None:
+                    future_mask = fc_df["ds"] > pd.Timestamp(close.index[-1]).tz_localize(None)
+                    fc_future = fc_df[future_mask]
+                    ax1.plot(fc_future["ds"], fc_future["yhat"],
+                             color="#10b981", linewidth=1.5, linestyle="-", label=f"Prophet {FORECAST_DAYS}d")
+                    ax1.fill_between(fc_future["ds"], fc_future["yhat_lower"], fc_future["yhat_upper"],
+                                     alpha=0.15, color="#10b981", label="80% CI")
+                    # Annotate 30/60 day targets
+                    if fc.get("target_30"):
+                        ax1.axhline(fc["target_30"], color="#10b981", linewidth=0.7, linestyle=":")
+                        ax1.text(fc_future["ds"].iloc[-1], fc["target_30"],
+                                 f" 60d: {fc['target_60']:.0f}", color="#10b981", fontsize=8, va="center")
+
+            ax1.set_ylabel("Price")
+            ax1.legend(fontsize=8, loc="upper left")
+            ax1.set_title(f"{sel_name} — 1 Year", fontsize=11)
+            ax1.spines[["top","right"]].set_visible(False)
+            plt.setp(ax1.get_xticklabels(), visible=False)
+
+            # Volume
+            vol_colors = ["#10b981" if c >= o else "#ef4444"
+                          for c, o in zip(df_t["Close"], df_t["Open"])]
+            ax2.bar(df_t.index, df_t["Volume"], color=vol_colors, width=1, alpha=0.7)
+            ax2.set_ylabel("Volume", fontsize=8)
+            ax2.spines[["top","right"]].set_visible(False)
+            plt.setp(ax2.get_xticklabels(), visible=False)
+
+            # RSI
+            if "RSI14" in df_t.columns:
+                ax3.plot(df_t.index, df_t["RSI14"], color="#8b5cf6", linewidth=1)
+                ax3.axhline(70, color="#ef4444", linewidth=0.6, linestyle="--")
+                ax3.axhline(30, color="#10b981", linewidth=0.6, linestyle="--")
+                ax3.fill_between(df_t.index, 70, 100, alpha=0.05, color="#ef4444")
+                ax3.fill_between(df_t.index, 0, 30, alpha=0.05, color="#10b981")
+                ax3.set_ylim(0, 100)
+                ax3.set_ylabel("RSI-14", fontsize=8)
+                ax3.spines[["top","right"]].set_visible(False)
+
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
+
+            # Forecast summary card (HRC only)
+            if sel_ticker == "HRC=F" and fc:
+                trend_icon = {"bullish": "📈", "bearish": "📉", "neutral": "➡️"}.get(fc["trend"], "")
+                fc1, fc2, fc3, fc4 = st.columns(4)
+                fc1.metric("Current HRC",  f"${fc['current']:.0f}",  "USD/short ton")
+                fc2.metric("30-day target", f"${fc['target_30']:.0f}", f"{fc['change_pct_30']:+.1f}%")
+                fc3.metric("60-day target", f"${fc['target_60']:.0f}", f"{fc['change_pct_60']:+.1f}%")
+                fc4.metric("Trend", f"{trend_icon} {fc['trend'].title()}")
+
+    # ────────────────────────────────────────────────────────────────────────
+    # Sub-tab 2 — News Impact Analyzer
+    # ────────────────────────────────────────────────────────────────────────
+    with ft2:
+        st.markdown(
+            "Paste any steel trade announcement — tariff change, antidumping ruling, "
+            "supply disruption, trade agreement — and the system will quantify the "
+            "expected impact on HRC futures prices and India's trade flows."
+        )
+
+        EXAMPLE_ANNOUNCEMENTS = [
+            "Select an example…",
+            "India imposes 25% safeguard duty on HRC imports for 200 days due to surge in Chinese steel",
+            "US Section 232 steel tariffs increased to 50% on imports from all countries",
+            "China announces 15% cut in steel production capacity in Q3 2026",
+            "India and UAE sign comprehensive steel trade agreement, zero duty on bilateral steel trade",
+            "BHP reports 20% disruption in Australian iron ore exports due to Cyclone",
+            "EU CBAM carbon adjustment mechanism raises effective cost for Indian steel exporters by 12%",
+        ]
+
+        col_ann, col_eg = st.columns([3, 2])
+        with col_eg:
+            eg = st.selectbox("Load example", EXAMPLE_ANNOUNCEMENTS, key="imp_eg")
+        with col_ann:
+            default_text = "" if eg.startswith("Select") else eg
+            announcement = st.text_area(
+                "Announcement text",
+                value=default_text,
+                height=120,
+                placeholder="Paste or type a steel trade announcement…",
+                key="ann_text",
+            )
+
+        use_rag = st.checkbox(
+            "🔍 Enrich with RAG context (retrieves historical analogues from document corpus)",
+            value=True, key="use_rag_impact"
+        )
+        run_btn = st.button("⚡ Analyse Impact", type="primary", key="run_impact")
+
+        if run_btn and announcement.strip():
+            with st.spinner("Analysing announcement…"):
+                try:
+                    from steel_futures import analyze_news_impact, analyze_news_impact_with_rag
+                    if use_rag:
+                        impact = analyze_news_impact_with_rag(announcement.strip())
+                    else:
+                        impact = analyze_news_impact(announcement.strip())
+                except Exception as e:
+                    impact = {"error": str(e)}
+
+            if "error" in impact:
+                st.error(f"Analysis failed: {impact['error']}")
+            else:
+                # ── Summary banner ────────────────────────────────────────────
+                dir_color = {"positive": "🟢", "negative": "🔴", "neutral": "🟡"}.get(
+                    impact["direction_india_exports"], "⚪")
+                st.success(f"{dir_color} **{impact['event_type'].replace('_',' ').title()}** "
+                           f"(magnitude {impact['magnitude']}/3) · "
+                           f"Confidence {impact['confidence']:.0%}")
+                st.info(f"**Summary:** {impact['summary']}")
+
+                # ── KPI row ───────────────────────────────────────────────────
+                k1, k2, k3, k4 = st.columns(4)
+                k1.metric("Event Type",      impact["event_type"].replace("_", " ").title())
+                k2.metric("Futures Δ",       f"{impact['futures_impact_pct']:+.1f}%",
+                          "Base-case HRC impact")
+                k3.metric("Trade Flow Δ",    f"{impact['trade_flow_impact_pct']:+.1f}%",
+                          "India export flow impact")
+                k4.metric("HRC Current",     f"${impact.get('current_hrc_usd', 0):.0f}")
+
+                if impact.get("affected_countries"):
+                    st.write("**Affected countries:**", ", ".join(impact["affected_countries"]))
+                if impact.get("affected_products"):
+                    st.write("**Products:**", ", ".join(impact["affected_products"]))
+
+                # ── Scenario table ────────────────────────────────────────────
+                st.divider()
+                st.markdown("#### Bull / Base / Bear Scenarios")
+                import pandas as pd
+                sc_df = pd.DataFrame(impact["scenarios"])
+                sc_df.columns = ["Scenario", "Futures Δ%", "HRC Est. (USD)", "Trade Flow Δ%"]
+                st.dataframe(sc_df.set_index("Scenario"), use_container_width=True)
+
+                # ── Visualise scenarios ───────────────────────────────────────
+                import matplotlib
+                matplotlib.use("Agg")
+                import matplotlib.pyplot as plt
+                import numpy as np
+
+                fig, (ax_f, ax_t) = plt.subplots(1, 2, figsize=(10, 4))
+                scenarios = [s["scenario"] for s in impact["scenarios"]]
+                fut_vals  = [s["futures_chg_pct"] for s in impact["scenarios"]]
+                trd_vals  = [s["trade_flow_chg_pct"] for s in impact["scenarios"]]
+                colors    = ["#10b981" if v >= 0 else "#ef4444" for v in fut_vals]
+                tcolors   = ["#10b981" if v >= 0 else "#ef4444" for v in trd_vals]
+
+                ax_f.barh(scenarios, fut_vals, color=colors)
+                ax_f.axvline(0, color="black", linewidth=0.8)
+                ax_f.set_title("HRC Futures Impact (%)", fontsize=10)
+                ax_f.spines[["top","right"]].set_visible(False)
+
+                ax_t.barh(scenarios, trd_vals, color=tcolors)
+                ax_t.axvline(0, color="black", linewidth=0.8)
+                ax_t.set_title("India Export Trade Flow Impact (%)", fontsize=10)
+                ax_t.spines[["top","right"]].set_visible(False)
+
+                plt.tight_layout()
+                st.pyplot(fig)
+                plt.close(fig)
+
+                with st.expander("ℹ️ Model methodology"):
+                    st.caption(impact.get("model_note", ""))
+
+    # ────────────────────────────────────────────────────────────────────────
+    # Sub-tab 3 — Scenario Comparison
+    # ────────────────────────────────────────────────────────────────────────
+    with ft3:
+        st.markdown("Compare the simultaneous effects of multiple policy scenarios on "
+                    "HRC futures and India's bilateral steel exports.")
+
+        scenarios_input = st.text_area(
+            "Enter 2–4 scenarios (one per line)",
+            height=130,
+            value=(
+                "India safeguard duty 25% on HRC imports\n"
+                "US Section 232 tariffs raised to 50%\n"
+                "India-GCC FTA signed: zero duty on bilateral steel\n"
+                "China capacity cuts 20% due to environmental regulation"
+            ),
+            key="multi_scenarios",
+        )
+        run_multi = st.button("⚡ Compare Scenarios", type="primary", key="run_multi")
+
+        if run_multi and scenarios_input.strip():
+            scenario_lines = [s.strip() for s in scenarios_input.strip().split("\n") if s.strip()]
+            results_multi = []
+            progress = st.progress(0)
+
+            from steel_futures import analyze_news_impact
+            for i, sc_text in enumerate(scenario_lines):
+                with st.spinner(f"Analysing: {sc_text[:60]}…"):
+                    try:
+                        res = analyze_news_impact(sc_text)
+                        results_multi.append({
+                            "Scenario":        sc_text[:70],
+                            "Event Type":      res.get("event_type", "—").replace("_", " ").title(),
+                            "Magnitude":       res.get("magnitude", "—"),
+                            "Futures Δ%":      res.get("futures_impact_pct", 0),
+                            "Trade Flow Δ%":   res.get("trade_flow_impact_pct", 0),
+                            "India Exports":   res.get("direction_india_exports", "—").title(),
+                            "Summary":         res.get("summary", "—"),
+                        })
+                    except Exception as e:
+                        results_multi.append({
+                            "Scenario": sc_text[:70], "Event Type": "ERROR",
+                            "Magnitude": "—", "Futures Δ%": 0, "Trade Flow Δ%": 0,
+                            "India Exports": "—", "Summary": str(e),
+                        })
+                progress.progress((i + 1) / len(scenario_lines))
+
+            progress.empty()
+
+            import pandas as pd
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+
+            df_multi = pd.DataFrame(results_multi)
+            st.dataframe(
+                df_multi[["Scenario","Event Type","Magnitude","Futures Δ%","Trade Flow Δ%","India Exports"]],
+                use_container_width=True
+            )
+
+            # Bubble chart: futures impact vs trade flow impact
+            fig, ax = plt.subplots(figsize=(10, 6))
+            for _, row in df_multi.iterrows():
+                color = "#10b981" if row["India Exports"] == "Positive" else "#ef4444"
+                ax.scatter(row["Futures Δ%"], row["Trade Flow Δ%"],
+                           s=200, color=color, alpha=0.8, zorder=3)
+                ax.annotate(row["Scenario"][:40], (row["Futures Δ%"], row["Trade Flow Δ%"]),
+                            fontsize=8, ha="center", va="bottom",
+                            xytext=(0, 8), textcoords="offset points")
+
+            ax.axvline(0, color="black", linewidth=0.8, linestyle="--")
+            ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
+            ax.set_xlabel("HRC Futures Impact (%)")
+            ax.set_ylabel("India Export Trade Flow Impact (%)")
+            ax.set_title("Scenario Map: Futures vs Trade Flow Impact\n🟢 Positive for India exports  🔴 Negative")
+            ax.spines[["top","right"]].set_visible(False)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close(fig)
+
+            with st.expander("📋 Full summaries"):
+                for _, row in df_multi.iterrows():
+                    st.markdown(f"**{row['Scenario'][:70]}**")
+                    st.caption(row["Summary"])
+                    st.write("")
