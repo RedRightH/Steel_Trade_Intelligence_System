@@ -810,10 +810,11 @@ with tab5:
         st.stop()
 
     # ── Sub-tabs ──────────────────────────────────────────────────────────────
-    ft1, ft2, ft3 = st.tabs([
+    ft1, ft2, ft3, ft4 = st.tabs([
         "📊 Price Charts & Forecast",
         "📰 News Impact Analyzer",
         "🔮 Scenario Comparison",
+        "📋 Articles Scored",
     ])
 
     # ────────────────────────────────────────────────────────────────────────
@@ -1102,3 +1103,132 @@ with tab5:
                     st.markdown(f"**{row['Scenario'][:70]}**")
                     st.caption(row["Summary"])
                     st.write("")
+
+    # ── ft4: Articles Scored ──────────────────────────────────────────────────
+    with ft4:
+        st.subheader("📋 Articles Scored by AI-GPR Pipeline")
+        st.caption("Articles fetched by the RSS pipeline, risk-scored by Layer 1 (0–1 scale). Refresh by running the pipeline.")
+
+        import json as _json
+        import os as _os
+        import pandas as _pd
+
+        log_path = _os.path.join(_os.path.dirname(__file__), "pipeline_log.json")
+        gpr_path = _os.path.join(_os.path.dirname(__file__), "futures_cache", "steel_gpr_index.json")
+
+        # ── Load articles ────────────────────────────────────────────────────
+        articles_df = None
+        if _os.path.exists(log_path):
+            try:
+                with open(log_path) as f:
+                    log = _json.load(f)
+                raw_articles = log.get("articles", [])
+                if raw_articles:
+                    articles_df = _pd.DataFrame(raw_articles)
+                    for col in ["risk_score", "steel_relevant", "title", "feed", "published", "summary", "url"]:
+                        if col not in articles_df.columns:
+                            articles_df[col] = None
+                    articles_df["risk_score"] = _pd.to_numeric(articles_df["risk_score"], errors="coerce").fillna(0.0)
+            except Exception as e:
+                st.warning(f"Could not load pipeline log: {e}")
+
+        if articles_df is None or articles_df.empty:
+            st.info("No articles found. Run the classifier pipeline first: `python steel_rag/classifier_pipeline.py --once`")
+        else:
+            # ── Filter controls ──────────────────────────────────────────────
+            col_f1, col_f2, col_f3 = st.columns([2, 2, 2])
+            with col_f1:
+                min_risk = st.slider("Min risk score", 0.0, 1.0, 0.0, 0.05, key="art_min_risk")
+            with col_f2:
+                steel_filter = st.selectbox("Steel relevant", ["All", "Yes only", "No only"], key="art_steel_filter")
+            with col_f3:
+                feeds_available = ["All"] + sorted(articles_df["feed"].dropna().unique().tolist())
+                feed_filter = st.selectbox("Feed", feeds_available, key="art_feed_filter")
+
+            filtered = articles_df[articles_df["risk_score"] >= min_risk].copy()
+            if steel_filter == "Yes only":
+                filtered = filtered[filtered["steel_relevant"] == True]
+            elif steel_filter == "No only":
+                filtered = filtered[filtered["steel_relevant"] != True]
+            if feed_filter != "All":
+                filtered = filtered[filtered["feed"] == feed_filter]
+
+            st.caption(f"Showing **{len(filtered)}** of **{len(articles_df)}** articles")
+
+            # ── Risk score distribution bar ───────────────────────────────────
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as _plt
+            import numpy as _np
+
+            fig_dist, ax_dist = _plt.subplots(figsize=(8, 2))
+            scores = articles_df["risk_score"].values
+            ax_dist.hist(scores, bins=20, range=(0, 1), color="#6366f1", alpha=0.8, edgecolor="none")
+            ax_dist.axvline(0.3, color="#f59e0b", linewidth=1.5, linestyle="--", label="0.3 threshold")
+            ax_dist.axvline(0.5, color="#ef4444", linewidth=1.5, linestyle="--", label="0.5 threshold")
+            ax_dist.set_xlabel("Risk Score"); ax_dist.set_ylabel("Count")
+            ax_dist.set_title("Risk Score Distribution")
+            ax_dist.spines[["top","right"]].set_visible(False)
+            ax_dist.legend(fontsize=8)
+            _plt.tight_layout()
+            st.pyplot(fig_dist)
+            _plt.close(fig_dist)
+
+            # ── Article table with colour-coded risk ──────────────────────────
+            def _risk_badge(score):
+                if score >= 0.6:
+                    return "🔴"
+                elif score >= 0.3:
+                    return "🟡"
+                else:
+                    return "⚪"
+
+            display_df = filtered[["title", "feed", "published", "risk_score", "steel_relevant", "summary"]].copy()
+            display_df.insert(0, "Risk", filtered["risk_score"].apply(_risk_badge))
+            display_df = display_df.rename(columns={
+                "title": "Title", "feed": "Feed", "published": "Published",
+                "risk_score": "Score", "steel_relevant": "Steel?", "summary": "Summary"
+            })
+            display_df["Score"] = display_df["Score"].round(3)
+            display_df["Title"] = display_df["Title"].fillna("").str[:80]
+            display_df["Summary"] = display_df["Summary"].fillna("").str[:120]
+
+            st.dataframe(
+                display_df.sort_values("Score", ascending=False).reset_index(drop=True),
+                use_container_width=True,
+                height=400,
+            )
+
+            # ── Steel-GPR index chart ─────────────────────────────────────────
+            if _os.path.exists(gpr_path):
+                st.divider()
+                st.subheader("Steel-GPR Daily Index")
+                st.caption("Normalized geopolitical risk index for steel trade, built from pipeline article scores (baseline=100).")
+                try:
+                    with open(gpr_path) as f:
+                        gpr_data = _json.load(f)
+                    gpr_df = _pd.DataFrame(gpr_data)
+                    gpr_df["date"] = _pd.to_datetime(gpr_df["date"])
+                    gpr_df = gpr_df.sort_values("date")
+
+                    fig_gpr, ax_gpr = _plt.subplots(figsize=(10, 3))
+                    ax_gpr.fill_between(gpr_df["date"], gpr_df["steel_gpr"], alpha=0.25, color="#6366f1")
+                    ax_gpr.plot(gpr_df["date"], gpr_df["steel_gpr"], color="#6366f1", linewidth=1.5)
+                    ax_gpr.axhline(100, color="grey", linewidth=0.8, linestyle="--", label="Baseline 100")
+                    ax_gpr.set_ylabel("Steel-GPR Index")
+                    ax_gpr.set_title("Steel Trade Geopolitical Risk Index")
+                    ax_gpr.spines[["top","right"]].set_visible(False)
+                    ax_gpr.legend(fontsize=8)
+                    _plt.tight_layout()
+                    st.pyplot(fig_gpr)
+                    _plt.close(fig_gpr)
+
+                    latest = gpr_df.iloc[-1]
+                    delta = latest["steel_gpr"] - 100
+                    st.metric("Latest Steel-GPR", f"{latest['steel_gpr']:.1f}",
+                              delta=f"{delta:+.1f} vs baseline",
+                              delta_color="inverse")
+                except Exception as e:
+                    st.warning(f"Could not render Steel-GPR chart: {e}")
+            else:
+                st.info("Steel-GPR index not yet built. Run the pipeline to generate it.")

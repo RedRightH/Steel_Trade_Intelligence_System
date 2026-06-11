@@ -355,6 +355,18 @@ def process_articles(articles: list[dict]) -> int:
         label = _classify_article(art["title"], art["summary"], groq_client)
         log.info(f"  Classified as: {label}")
 
+        # 3b. AI-GPR Layer-1 Steel Trade Risk Score (0-1, temp=0)
+        try:
+            from steel_futures import score_article as _score_article
+            scored = _score_article(f"{art['title']} {art['summary'][:500]}", client=groq_client)
+            art["risk_score"]     = scored["risk_score"]
+            art["steel_relevant"] = scored["steel_relevant"]
+            log.info(f"  Risk score: {scored['risk_score']:.2f}")
+        except Exception as _e:
+            art["risk_score"]     = 0.0
+            art["steel_relevant"] = False
+            log.debug(f"  Risk score failed: {_e}")
+
         # 4. Chunk
         chunks = splitter.split_text(doc_text)
         if not chunks:
@@ -433,11 +445,33 @@ def run_pipeline() -> dict:
         "upserted":     upserted,
         "elapsed_s":    round(time.time() - t0, 1),
         "articles": [
-            {"title": a["title"], "feed": a["feed_name"],
-             "label": "", "url": a["url"]}
-            for a in articles[:20]   # keep last 20 in log for dashboard
+            {
+                "title":         a["title"],
+                "feed":          a["feed_name"],
+                "label":         a.get("label", ""),
+                "url":           a["url"],
+                "published":     a.get("published", ""),
+                "risk_score":    round(a.get("risk_score", 0.0), 3),
+                "steel_relevant": a.get("steel_relevant", False),
+                "summary":       a.get("summary", "")[:300],
+            }
+            for a in articles[:50]   # keep last 50 in log for dashboard
         ],
     }
+
+    # Build / update Steel-GPR index from all scored articles this run
+    try:
+        from steel_futures import build_steel_gpr_index
+        scored_arts = [
+            {"title": a["title"], "text": a.get("summary", ""),
+             "published": a.get("published", "")[:10]}
+            for a in articles if a.get("risk_score") is not None
+        ]
+        if scored_arts:
+            build_steel_gpr_index(scored_arts, save=True)
+            log.info(f"Steel-GPR index updated with {len(scored_arts)} articles")
+    except Exception as _e:
+        log.warning(f"Steel-GPR index build failed: {_e}")
     log_data.setdefault("runs", []).append(run_record)
     # Keep only last 50 runs in log
     log_data["runs"] = log_data["runs"][-50:]
