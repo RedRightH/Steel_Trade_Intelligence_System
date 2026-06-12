@@ -1,178 +1,163 @@
 # India Steel Trade Intelligence Platform
 
-A multi-agent RAG system for analysing Indian steel trade policy, export trends, and MFN tariff rates — built as a capstone project for IIFT Personal Interview preparation.
+A multi-agent RAG system for analysing Indian steel trade policy, export trends, MFN tariffs, steel futures, and news-driven market impact — built as an AI engineering capstone.
 
 ## Architecture
 
 ```
-Question
-   │
-   ▼
-Router (classify → 7 types)
-   ├── ANTI_DUMPING / SAFEGUARD / POLICY_OPPORTUNITY  → PolicyAnalystAgent   → RAG (FAISS + Groq)
-   ├── RAW_MATERIAL / CBAM_COMPLIANCE                 → SupplyChainRiskAgent → RAG (FAISS + Groq)
-   ├── DATA_ANALYSIS                                  → DataAnalysisAgent    → TRADESTAT XLSX + LLM code-gen
-   └── TARIFF_ANALYSIS                                → TariffAnalysisAgent  → WTO WITS MFN CSVs + LLM code-gen
+                            ┌─ Live RSS daemon ─ classify ─ upsert ─┐
+Data sources ─ ingest ──────┤                                       ├─ Pinecone (5,640 vectors) + BM25
+(PDF / XLSX / CSV / RSS)    └─ Steel-GPR daily risk index ──────────┘
+                                                                        │
+Question                                                                ▼
+   │                                                          Hybrid RAG (dense + BM25
+   ▼                                                          → RRF → BGE rerank → Groq 70B)
+Router (classify → 7 types)                                             │
+   ├── ANTI_DUMPING / SAFEGUARD / POLICY_OPPORTUNITY → PolicyAnalystAgent ──┤ (+ gravity scenario)
+   ├── RAW_MATERIAL / CBAM_COMPLIANCE                → SupplyChainRiskAgent ┤
+   ├── DATA_ANALYSIS                                 → DataAnalysisAgent ── TRADESTAT (99 months)
+   └── TARIFF_ANALYSIS                               → TariffAnalysisAgent ─ WTO WITS (2010–23)
+
+News event → 3-layer AI-GPR scoring → calibrated futures impact (event study, 22 events)
+           → GPR-conditioned Prophet forecast → market opportunity ranker (gravity gap + momentum)
 ```
 
 ## Features
 
 | Module | What it does |
 |--------|-------------|
-| `rag.py` | FAISS vector store + Groq LLM, Langfuse v4 tracing |
-| `ingest.py` | PDF/document ingestion → chunking → FAISS index |
-| `router.py` | 7-category classifier, Pydantic output schemas, multi-agent dispatch |
-| `data_agent.py` | 26-month TRADESTAT export data, trend analysis, regional breakdown, LLM code-gen charts |
-| `tariff_agent.py` | WTO WITS MFN tariff data (HS 72 & 73, 2010-2023), trend charts, heatmaps |
-| `dashboard.py` | Streamlit app — 4 tabs: Query · Export Trends · Tariff Lookup · Eval Report |
-| `eval/run_eval.py` | Evaluation harness, baseline comparison |
+| `steel_rag/rag.py` | Hybrid retrieval: Pinecone dense + BM25 + RRF fusion + BGE cross-encoder rerank → Groq LLaMA-3.3-70b |
+| `steel_rag/router.py` | 7-category classifier (100% gate accuracy), 4 agents, Pydantic outputs, answer synthesizer fallback |
+| `steel_rag/data_agent.py` | 99 months of TRADESTAT export data (FY2018–2026), trend analysis, LLM chart generation |
+| `steel_rag/tariff_agent.py` | WTO WITS MFN tariffs (HS 72 & 73, 2010–2023), trends, rankings, natural-language lookup |
+| `steel_rag/gravity_model.py` | Trade gravity model (OLS R²=0.43, XGBoost R²=0.92), `predict_trade_flow()` scenarios |
+| `steel_rag/steel_futures.py` | HRC futures + steel equities, Prophet forecast with Steel-GPR news regressor, 3-layer AI-GPR news impact (Iacoviello & Tong 2026) |
+| `steel_rag/market_opportunity.py` | Ranks 83 export markets by gravity gap + momentum + size + FTA; maps news events to boosted/at-risk markets |
+| `steel_rag/classifier_pipeline.py` | Live RSS daemon: fetch → classify → embed → Pinecone upsert + Steel-GPR index build |
+| `steel_rag/semantic_cache.py` | SQLite semantic cache (cosine ≥ 0.92, 24h TTL, 60% measured hit rate) |
+| `steel_rag/guardrails.py` | Domain guardrails: 20/20 red-team gate (0 false accepts/rejects) |
+| `steel_rag/dashboard.py` | Streamlit app — 6 tabs: Query · Trade Flows · Tariffs · Eval · Futures & Impact · Gravity Scenarios |
+| `api.py` | FastAPI backend (7 routes) with semantic cache |
+| `multimodal/qwen_vl_extract.py` | Qwen2-VL-2B document image extraction (3/3 test cases pass) |
+| `dpo/` | DPO fine-tune of Qwen2.5-1.5B (experimental; Groq stays in production) |
 
-## Data Sources
+## Measured results
+
+| Gate | Result |
+|------|--------|
+| Router accuracy | 10/10 = 100% (target ≥ 80%) |
+| Agent event tests | 5/5 pass with structured output + citations |
+| v3 RAG faithfulness | 1.00 (LLM judge), +0.117 vs v1 (target +0.10) |
+| Guardrails red-team | 20/20 |
+| Multimodal extraction | 3/3 test cases |
+| Forecast backtest (7y, 34 folds) | MAPE 11.2%, directional accuracy 62% on 30-session HRC horizon |
+| News-impact event study (22 events, 2019–2025) | sign agreement 59%, Pearson r = 0.469 |
+| Semantic cache hit rate | 60% (target 20–35%) |
+
+Full details: [eval/benchmark_v1_vs_v2_vs_v3.md](eval/benchmark_v1_vs_v2_vs_v3.md) and [eval/week3_summary.md](eval/week3_summary.md).
+
+## Data sources
 
 | Dataset | Description | Format |
 |---------|-------------|--------|
-| DGTR notifications | Anti-dumping & safeguard investigation PDFs | PDF → FAISS |
-| Ministry of Steel Annual Reports | Policy context, production statistics | PDF → FAISS |
-| Foreign Trade Policy 2023 | FTP chapters 1-9 | PDF → FAISS |
-| TRADESTAT monthly exports | India's steel exports by country, 26 months | XLSX (26 files) |
-| WTO WITS MFN tariffs | India's applied MFN tariff rates HS 72 & 73, 2010-2023 | CSV (14 files) |
-| BIS product manuals | IS 2062 and other steel standards | PDF → FAISS |
+| DGTR notifications | Anti-dumping & safeguard investigation PDFs | PDF → Pinecone |
+| Ministry of Steel Annual Reports | Policy context, production statistics | PDF → Pinecone |
+| Foreign Trade Policy 2023 | FTP chapters | PDF → Pinecone |
+| BIS quality orders | IS 2062, QCO 2024 | PDF → Pinecone |
+| TRADESTAT monthly exports | India steel exports by country, 99 months | XLSX |
+| WTO WITS MFN tariffs | India applied MFN rates HS 72 & 73, 2010–2023 | CSV (14 files) |
+| Live RSS news | 4 feeds, classified and upserted every 4h | RSS → Pinecone |
+| Market data | HRC=F, SLX, Tata Steel, SAIL, JSW, MT, NUE | yfinance |
+| World Bank GDP | Partner-country GDP for the gravity model | API (cached) |
 
-> **Note:** Source documents (`Base documents/`) and the FAISS index (`steel_rag/faiss_index/`) are not included due to size. Rebuild the index with `python steel_rag/ingest.py` after adding your documents.
+> Source documents (`Base documents/`) and vector indexes are not committed due to size. Rebuild with `python steel_rag/ingest_pinecone.py` after adding documents.
 
-## Quick Start
-
-### 1. Clone and install
+## Quick start
 
 ```bash
-git clone https://github.com/<your-username>/india-steel-trade-intelligence.git
-cd india-steel-trade-intelligence
 pip install -r requirements.txt
+cp .env.example .env          # add GROQ_API_KEY + PINECONE_API_KEY
+python steel_rag/ingest_pinecone.py
+python steel_rag/build_bm25_corpus.py
+streamlit run steel_rag/dashboard.py   # http://localhost:8501
 ```
 
-### 2. Configure environment
+Optional services:
 
 ```bash
-cp .env.example .env
-# Edit .env and add your GROQ_API_KEY (free at console.groq.com)
-```
-
-### 3. Add source documents
-
-Place your PDFs and data files into `Base documents/`:
-
-```
-Base documents/
-├── Anti-Dumping/          # DGTR AD investigation PDFs
-├── Safeguard/             # Safeguard investigation PDFs
-├── FTP/                   # Foreign Trade Policy chapters
-├── Ministry of Steel/     # Annual Report PDFs
-├── India_Steel_exports/   # TRADESTAT monthly XLSX files
-└── MFN_India/             # WTO WITS MFN CSV files (one per year)
-```
-
-### 4. Build the FAISS index
-
-```bash
-python steel_rag/ingest.py
-# First run: ~5-10 min depending on corpus size
-```
-
-### 5. Launch the dashboard
-
-```bash
-streamlit run steel_rag/dashboard.py
-# Opens at http://localhost:8501
+python api.py                                  # FastAPI backend on :8000
+python steel_rag/classifier_pipeline.py --daemon   # live news pipeline (4h cycle)
 ```
 
 ## Usage
 
-### Dashboard tabs
-
-- **Intelligence Query** — ask any question; the router classifies it and dispatches to the right agent
-- **Export Trends** — top destinations, growing/shrinking markets, regional breakdown, country comparison
-- **Tariff Lookup** — MFN rate by HS code, trend charts, heatmaps, LLM-powered tariff questions
-- **Eval Report** — RAG evaluation baseline comparison
-
-### Direct API
-
 ```python
 from steel_rag.router import route_query
-
 result = route_query("What anti-dumping duty was imposed on seamless tubes from China?")
-print(result.result.answer_text)
-print(result.question_type)   # "ANTI_DUMPING"
-print(result.agent_used)      # "PolicyAnalystAgent"
+print(result.result.answer_text)       # grounded answer with citations
+print(result.result.gravity_scenario)  # trade-flow prediction when relevant
 ```
 
 ```python
-from steel_rag.data_agent import get_market_trends, get_latest_top_destinations
-
-trends = get_market_trends(lookback_months=6, min_avg_usd=2.0, n=10)
-print(trends["growing"])
-
-top = get_latest_top_destinations(n=10)
+from steel_rag.steel_futures import analyze_news_impact
+impact = analyze_news_impact("US doubles Section 232 steel tariffs to 50%")
+print(impact["futures_impact_pct"], impact["trade_flow_impact_pct"])
 ```
 
 ```python
-from steel_rag.tariff_agent import get_tariff_trend, query_tariff
-
-trend = get_tariff_trend("720810")
-
-result = query_tariff("Which steel products face the highest MFN tariff in India?")
-print(result["answer"])
+from steel_rag.market_opportunity import rank_market_opportunities
+print(rank_market_opportunities(top_n=10))   # under-served export markets, scored
 ```
 
-## Evaluation
+## Evaluation & backtests
 
 ```bash
-# Run full eval (10 questions)
-python steel_rag/eval/run_eval.py --tag v1b
-
-# Compare two runs
-python steel_rag/eval/run_eval.py --compare-only --tag v1b
+python eval/router_accuracy_test.py        # router gate (≥ 80%)
+python eval/test_agent_events.py           # 5-event agent gate
+python eval/test_news_futures_chain.py     # news→futures→markets chain gate
+python eval/event_study_2019.py            # recalibrate news multipliers (22 events)
+python eval/backtest_futures.py            # 7-year walk-forward forecast backtest
 ```
 
-| Run | Corpus | Answered | Source Hit Rate | Avg Latency |
-|-----|--------|----------|-----------------|-------------|
-| v1  | 3,086 chunks (55 docs) | 7/10 (70%) | - | 3,627ms |
-| v1b | 5,625 chunks (expanded) | 7/10 (70%) | 70% | 6,063ms |
-
-## Tech Stack
+## Tech stack
 
 | Layer | Technology |
 |-------|-----------|
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
-| Vector store | FAISS (CPU) |
-| LLM | Groq `llama-3.3-70b-versatile` |
+| Vector store | Pinecone serverless (+ FAISS local fallback) |
+| Sparse + rerank | rank-bm25, `cross-encoder/ms-marco-MiniLM-L-6-v2` |
+| LLM | Groq `llama-3.3-70b-versatile` (562ms avg, 133 tok/s measured) |
+| Forecasting | Meta Prophet (+ Steel-GPR external regressor) |
+| Gravity / ML | statsmodels OLS, XGBoost |
+| Fine-tuning | TRL DPO, PEFT LoRA, bitsandbytes 4-bit (RTX 4090) |
+| Multimodal | Qwen2-VL-2B-Instruct (4-bit) |
 | Validation | Pydantic v2 |
-| Observability | Langfuse v4 |
-| Dashboard | Streamlit 1.35+ |
-| Data | pandas, numpy, matplotlib |
+| Observability | Langfuse |
+| UI / API | Streamlit, FastAPI |
 
-## Project Structure
+## Project structure
 
 ```
 AI_Trade_Capstone/
-├── .env.example
-├── requirements.txt
-├── README.md
 ├── steel_rag/
-│   ├── ingest.py             # Document ingestion → FAISS
-│   ├── rag.py                # Core RAG query function
-│   ├── router.py             # Multi-agent router + Pydantic schemas
-│   ├── data_agent.py         # Export trend analysis (TRADESTAT XLSX)
-│   ├── tariff_agent.py       # MFN tariff analysis (WTO WITS CSV)
-│   ├── dashboard.py          # Streamlit dashboard
-│   └── eval/
-│       ├── run_eval.py       # Evaluation harness
-│       ├── ground_truth.json
-│       ├── baseline_v1.json
-│       └── baseline_v1b.json
+│   ├── rag.py · router.py · memory.py · guardrails.py · semantic_cache.py
+│   ├── data_agent.py · tariff_agent.py · gravity_model.py
+│   ├── steel_futures.py · market_opportunity.py
+│   ├── classifier.py · classifier_pipeline.py
+│   ├── ingest.py · ingest_pinecone.py · build_bm25_corpus.py
+│   ├── eval_harness.py · run_eval.py
+│   └── dashboard.py
+├── eval/            # gate tests, benchmarks, event studies, backtests
+├── dpo/             # DPO preference pairs + checkpoint
+├── multimodal/      # Qwen2-VL extraction
+├── vllm/            # serving setup + throughput benchmark
+├── api.py · app.py · policy_brief.md
+└── requirements.txt
 ```
 
-## Roadmap
+## Honest limitations
 
-- [ ] Live RSS auto-classification pipeline into FAISS
-- [ ] Expand eval set from 10 to 25 questions
-- [ ] Deploy dashboard to Streamlit Cloud
+- HRC futures are regime-switching: ~11% MAPE / 62% direction on a 30-session horizon is the realistic envelope; regime-break periods hit 25–35% error regardless of config.
+- News-impact calibration rests on 22 documented events; per-type factors with n=1 are clipped at runtime.
+- The GPR forecast regressor is metric-neutral in backtest — its value is live news-conditioning, not historical accuracy lift.
+- Local-only deployment by design (Streamlit + FastAPI on localhost); vLLM serving requires Linux/WSL2.

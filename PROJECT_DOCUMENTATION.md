@@ -34,17 +34,38 @@ AI_Trade_Capstone/
 │
 ├── 🤖 Steel RAG System
 │   ├── steel_rag/
-│   │   ├── dashboard.py          # Streamlit UI
-│   │   ├── rag.py                # Core RAG engine
-│   │   ├── router.py             # Query routing logic
-│   │   ├── data_agent.py         # Data analysis agent
-│   │   ├── tariff_agent.py       # Tariff analysis agent
-│   │   ├── classifier.py         # Query classification
+│   │   ├── dashboard.py          # Streamlit UI (6 tabs)
+│   │   ├── rag.py                # Hybrid RAG (dense+BM25+RRF+rerank → Groq)
+│   │   ├── router.py             # Query routing, 4 agents, Pydantic outputs
+│   │   ├── data_agent.py         # TRADESTAT export analysis (99 months)
+│   │   ├── tariff_agent.py       # WTO WITS MFN tariff analysis
+│   │   ├── gravity_model.py      # Trade gravity model (OLS + XGBoost)
+│   │   ├── steel_futures.py      # Futures, Prophet forecast, AI-GPR news impact
+│   │   ├── market_opportunity.py # Export market opportunity ranker
+│   │   ├── classifier.py         # Query/news classification
+│   │   ├── classifier_pipeline.py# Live RSS daemon → Pinecone + GPR index
+│   │   ├── semantic_cache.py     # SQLite semantic cache (60% hit rate)
+│   │   ├── guardrails.py         # Domain guardrails (20/20 red-team)
 │   │   ├── memory.py             # Conversation memory
 │   │   ├── ingest.py             # FAISS indexing
 │   │   ├── ingest_pinecone.py    # Pinecone indexing
+│   │   ├── build_bm25_corpus.py  # BM25 corpus from Pinecone
 │   │   ├── eval_harness.py       # Evaluation framework
 │   │   └── run_eval.py           # Run evaluations
+│
+├── 🧪 Evaluation & Backtests (eval/)
+│   ├── benchmark_v1_vs_v2_vs_v3.md   # Full benchmark report
+│   ├── week3_summary.md              # Week 3 integration summary
+│   ├── router_accuracy_test.py       # Router gate — 10/10 pass
+│   ├── test_agent_events.py          # 5-event agent gate — 5/5 pass
+│   ├── test_news_futures_chain.py    # News→futures→markets gate — 4/4 pass
+│   ├── event_study_2019.py           # 22-event multiplier calibration (2019-2025)
+│   └── backtest_futures.py           # 7-year walk-forward forecast backtest
+│
+├── 🧬 ML Components
+│   ├── dpo/                      # DPO fine-tune (Qwen2.5-1.5B, experimental)
+│   ├── multimodal/               # Qwen2-VL document image extraction (3/3 pass)
+│   └── vllm/                     # Serving setup + throughput benchmark
 │
 ├── ⚙️ Configuration
 │   ├── .env                      # API keys (not committed)
@@ -426,6 +447,63 @@ python steel_rag/run_eval.py
 
 ---
 
+### **gravity_model.py**
+**Purpose:** Trade gravity model for India steel export predictions
+
+**What it does:**
+- Builds a gravity panel: TRADESTAT exports + World Bank GDP + distances + RTA flags (859 obs, 100 countries, FY2018–26)
+- Trains OLS (R²=0.431, interpretable) and XGBoost (R²=0.922, production)
+- `predict_trade_flow(country, gdp_growth_pct, tariff_change_pct)` — scenario predictions
+- Wired into `PolicyAnalystOutput.gravity_scenario` and dashboard Tab 6 sliders
+
+---
+
+### **steel_futures.py**
+**Purpose:** Steel market data, price forecasting, and news impact quantification
+
+**What it does:**
+- Fetches HRC=F futures + 6 steel equities via yfinance (4h cache)
+- Prophet 60-day forecast conditioned on the Steel-GPR news-risk regressor
+  (config validated by 7-year walk-forward backtest: MAPE 11.2%, direction 62%)
+- 3-layer AI-GPR news impact analysis (Iacoviello & Tong 2026): risk score →
+  event type + persistence → India spillover → quantified futures and trade flow impact
+- Impact multipliers calibrated against actual HRC=F moves around 22 documented
+  events 2019–2025 (`futures_cache/impact_calibration.json`)
+- Builds the daily Steel-GPR index from RSS articles
+
+---
+
+### **market_opportunity.py**
+**Purpose:** Ranked identification of under-served export markets
+
+**What it does:**
+- Scores 83 destinations: `0.40·z(gravity gap) + 0.30·z(6m momentum) + 0.20·z(size) + 0.10·FTA`
+- Gravity gap = XGBoost-predicted potential vs actual exports
+- `markets_affected_by_event(impact)` maps a news-impact analysis onto the
+  ranking with boosted / at-risk flags
+- Rendered in dashboard Tab 5 under "Market Opportunities Under This Event"
+
+---
+
+### **classifier_pipeline.py**
+**Purpose:** Live RSS news pipeline
+
+**What it does:**
+- Fetches 4 steel trade RSS feeds, classifies articles into 8 categories (Groq)
+- Embeds and upserts into Pinecone — articles immediately queryable
+- Updates the Steel-GPR daily index
+- Run modes: `--once`, `--daemon` (every 4h), `--status`
+
+---
+
+### **semantic_cache.py** and **guardrails.py**
+**Purpose:** Production hardening
+
+- Semantic cache: SQLite + MiniLM embeddings, cosine ≥ 0.92, 24h TTL, 60% measured hit rate
+- Guardrails: `is_in_domain()` + `is_answer_grounded()`, 20/20 red-team gate
+
+---
+
 ## ⚙️ Configuration Files
 
 ### **.env**
@@ -434,6 +512,7 @@ python steel_rag/run_eval.py
 **Contents:**
 ```bash
 GROQ_API_KEY=<your_key>
+PINECONE_API_KEY=<your_key>
 LANGFUSE_PUBLIC_KEY=<your_key>
 LANGFUSE_SECRET_KEY=<your_key>
 COMTRADE_PRIMARY_KEY=<your_key>
@@ -759,6 +838,20 @@ cmdCode='72'    # Broad: All iron and steel
 - Vector database integration
 - Conversation memory
 
+**v3.0** - Production RAG + ML layer (June 2026)
+- Hybrid retrieval: Pinecone + BM25 + RRF + BGE reranker (5,640 vectors)
+- Live RSS classification pipeline + Steel-GPR daily risk index
+- Gravity model (OLS + XGBoost), DPO fine-tune, Qwen2-VL multimodal
+- Semantic cache (60% hit rate), guardrails (20/20), FastAPI backend
+- All replan gates measured and passing (see PROJECT_STATUS_REPORT.md)
+
+**v4.0** - Integrated market intelligence (June 2026)
+- News → futures → markets dependency chain (gate 4/4)
+- Impact multipliers calibrated on 22 documented events 2019–2025
+- GPR-conditioned Prophet forecast, validated by 7-year walk-forward
+  backtest (34 folds: MAPE 11.2%, directional accuracy 62%)
+- Market opportunity ranker across 83 export destinations
+
 ---
 
 ## 👥 Contributing
@@ -767,5 +860,5 @@ For questions or contributions, please refer to the main README.md file.
 
 ---
 
-**Last Updated:** May 19, 2026
-**Maintained by:** Steel Trade Intelligence Team
+**Last Updated:** June 12, 2026
+**Maintained by:** Suchit Paul Santosh

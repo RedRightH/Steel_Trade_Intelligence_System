@@ -16,12 +16,15 @@
 
 ## 🎯 System Overview
 
-The **Steel RAG (Retrieval-Augmented Generation) System** is an AI-powered intelligence platform for analyzing Indian steel trade policy, export data, and tariff regulations. It combines:
+The **Steel RAG (Retrieval-Augmented Generation) System** is an AI-powered intelligence platform for analyzing Indian steel trade policy, export data, tariff regulations, steel futures, and news-driven market impact. It combines:
 
-- **Document Retrieval**: Semantic search across policy documents, trade statistics, and regulatory filings
-- **Multi-Agent Architecture**: Specialized agents for different query types
-- **Real-time Data Analysis**: Processing of TRADESTAT export data (26 months, Jan 2024 - Feb 2026)
-- **Tariff Intelligence**: MFN tariff lookup and trend analysis (2010-2023)
+- **Hybrid Document Retrieval**: Pinecone dense search + BM25 keyword + RRF fusion + BGE cross-encoder rerank over 5,640 vectors
+- **Multi-Agent Architecture**: 4 specialized agents across 7 question types (router accuracy 100% on the gate set)
+- **Trade Data Analysis**: TRADESTAT export data (99 months, FY2018 – Feb 2026)
+- **Tariff Intelligence**: WTO WITS MFN lookup and trend analysis (2010-2023)
+- **Market Intelligence**: HRC futures + steel equities, Prophet forecast conditioned on a daily news-risk index, 3-layer AI-GPR news impact analysis
+- **Trade Flow Modeling**: Gravity model (XGBoost R²=0.92) with scenario predictions and a ranked market opportunity list
+- **Live News Pipeline**: RSS daemon classifying and upserting articles every 4 hours
 - **Conversation Memory**: Context-aware follow-up questions
 
 ### Key Capabilities
@@ -34,6 +37,10 @@ The **Steel RAG (Retrieval-Augmented Generation) System** is an AI-powered intel
 | **Tariff Lookup** | MFN rates, tariff trends, chapter summaries | "What is India's MFN tariff on hot-rolled steel coils HS 7208?" |
 | **Policy Opportunities** | FTA benefits, PLI scheme, export incentives | "How does the India-UAE CEPA affect steel exports?" |
 | **Supply Chain Risk** | Raw material dependencies, CBAM compliance | "How does EU CBAM affect Indian steel exporters?" |
+| **News Impact** | Quantified futures + trade flow impact of announcements | "US doubles Section 232 steel tariffs to 50%" |
+| **Price Forecasting** | 60-day GPR-conditioned Prophet forecast of HRC futures | (dashboard Tab 5 — Futures & Impact) |
+| **Market Opportunities** | Ranked under-served export markets (gravity gap + momentum) | (dashboard Tab 5 / `market_opportunity.py`) |
+| **Gravity Scenarios** | Trade flow predictions under GDP/tariff scenarios | (dashboard Tab 6 — Gravity Scenarios) |
 
 ---
 
@@ -1498,9 +1505,10 @@ streamlit run app.py
 ## 📈 Performance & Optimization
 
 ### Retrieval Quality
-- **Top-K**: 3 documents (balance between context and noise)
-- **Chunk Size**: 1000 characters (optimal for semantic coherence)
-- **Chunk Overlap**: 200 characters (preserve context at boundaries)
+- **Pipeline**: dense (Pinecone) + BM25 → RRF fusion (top-20) → BGE cross-encoder rerank → top-3
+- **Chunk Size**: 800 characters (optimal for semantic coherence)
+- **Chunk Overlap**: 100 characters (preserve context at boundaries)
+- **Semantic cache**: cosine ≥ 0.92, 24h TTL, 60% measured hit rate
 
 ### LLM Efficiency
 - **Model**: Llama 3.3 70B (best quality/speed tradeoff)
@@ -1528,20 +1536,21 @@ streamlit run app.py
 python steel_rag/run_eval.py
 ```
 
-**Output**:
-```
-Baseline v1 Results:
-  Retrieval Accuracy: 87%
-  Answer Relevance:   92%
-  Factual Consistency: 89%
-  Avg Response Time:  2.3s
+### Measured results (June 2026)
 
-Improved v1b Results:
-  Retrieval Accuracy: 94%
-  Answer Relevance:   96%
-  Factual Consistency: 95%
-  Avg Response Time:  1.8s
-```
+| Metric | Result | Artifact |
+|--------|--------|----------|
+| v3 faithfulness (LLM judge) | 1.000 (+0.117 vs v1, gate +0.10) | `eval/baseline_v3.json` |
+| Router accuracy | 10/10 = 100% | `eval/router_accuracy.json` |
+| Agent event gates | 5/5 | `eval/agent_event_results.json` |
+| Guardrails red-team | 20/20 | benchmark report |
+| Multimodal extraction | 3/3 | `multimodal/vl_test_results.json` |
+| News→futures→markets chain | 4/4 | `eval/news_futures_chain_results.json` |
+| Forecast backtest (7y, 34 folds) | MAPE 11.2%, direction 62% | `eval/futures_backtest_results.json` |
+| News-impact event study (22 events) | sign 59%, Pearson 0.469 | `eval/event_study_results_2019.json` |
+| Semantic cache hit rate | 60% | benchmark report |
+
+Full analysis: `eval/benchmark_v1_vs_v2_vs_v3.md`
 
 ---
 
@@ -1569,6 +1578,6 @@ Improved v1b Results:
 
 ---
 
-**Last Updated**: May 19, 2026  
-**Version**: 2.0  
-**Maintained by**: Steel Trade Intelligence Team
+**Last Updated**: June 12, 2026
+**Version**: 4.0 (integrated market intelligence layer)
+**Maintained by**: Suchit Paul Santosh
