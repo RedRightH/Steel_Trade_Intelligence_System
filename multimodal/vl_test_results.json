@@ -1,0 +1,202 @@
+[
+  {
+    "image_path": "C:\\Users\\suchi\\AppData\\Local\\Temp\\tmpv5r_5niw.png",
+    "raw_text": "```json\n[\n  {\n    \"investigation_id\": \"AD_1\",\n    \"product\": \"Steel\",\n    \"countries\": [\n      {\n        \"name\": \"China\",\n        \"dumping_margin_pct\": \"65.3%\",\n        \"duty_pct\": \"18.2%\"\n      },\n      {\n        \"name\": \"Korea\",\n        \"dumping_margin_pct\": \"22.1%\",\n        \"duty_pct\": \"5.4%\"\n      },\n      {\n        \"name\": \"Japan\",\n        \"dumping_margin_pct\": \"19.8%\",\n        \"duty_pct\": \"4.9%\"\n      }\n    ],\n    \"date_of_initiation\": \"2021-01-01\",\n    \"investigating_authority\": \"India Trade Investigation Authority\"\n  },\n  {\n    \"investigation_id\": \"AD_2\",\n    \"product\": \"Steel\",\n    \"countries\": [\n      {\n        \"name\": \"China\",\n        \"dumping_margin_pct\": \"65.3%\",\n        \"duty_pct\": \"18.2%\"\n      },\n      {\n        \"name\": \"Korea\",\n        \"dumping_margin_pct\": \"22.1%\",\n        \"duty_pct\": \"5.4%\"\n      },\n      {\n        \"name\": \"Japan\",\n        \"dumping_margin_pct\": \"19.8%\",\n        \"duty_pct\": \"4.9%\"\n      }\n    ],\n    \"date_of_initiation\": \"2021-02-01\",\n    \"investigating_authority\": \"India Trade Investigation Authority\"\n  }\n]\n```",
+    "structured": [
+      {
+        "investigation_id": "AD_1",
+        "product": "Steel",
+        "countries": [
+          {
+            "name": "China",
+            "dumping_margin_pct": "65.3%",
+            "duty_pct": "18.2%"
+          },
+          {
+            "name": "Korea",
+            "dumping_margin_pct": "22.1%",
+            "duty_pct": "5.4%"
+          },
+          {
+            "name": "Japan",
+            "dumping_margin_pct": "19.8%",
+            "duty_pct": "4.9%"
+          }
+        ],
+        "date_of_initiation": "2021-01-01",
+        "investigating_authority": "India Trade Investigation Authority"
+      },
+      {
+        "investigation_id": "AD_2",
+        "product": "Steel",
+        "countries": [
+          {
+            "name": "China",
+            "dumping_margin_pct": "65.3%",
+            "duty_pct": "18.2%"
+          },
+          {
+            "name": "Korea",
+            "dumping_margin_pct": "22.1%",
+            "duty_pct": "5.4%"
+          },
+          {
+            "name": "Japan",
+            "dumping_margin_pct": "19.8%",
+            "duty_pct": "4.9%"
+          }
+        ],
+        "date_of_initiation": "2021-02-01",
+        "investigating_authority": "India Trade Investigation Authority"
+      }
+    ],
+    "model": "Qwen/Qwen2-VL-2B-Instruct",
+    "test_case": "AD_investigation_table"
+  },
+  {
+    "image_path": "C:\\Users\\suchi\\AppData\\Local\\Temp\\tmpuye0idlg.png",
+    "raw_text": "```json\n[\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.9%\",\n    \"total_incidence_pct\": \"23.1%\"\n  },\n  {\n    \"hs_code\": \"28221000\",\n    \"description\": \"Steel\",\n    \"bcd_pct\": \"18.2%\",\n    \"igst_pct\": \"4.",
+    "structured": [
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      },
+      {
+        "hs_code": "28221000",
+        "description": "Steel",
+        "bcd_pct": "18.2%",
+        "igst_pct": "4.9%",
+        "total_incidence_pct": "23.1%"
+      }
+    ],
+    "model": "Qwen/Qwen2-VL-2B-Instruct",
+    "test_case": "tariff_schedule_page"
+  },
+  {
+    "image_path": "C:\\Users\\suchi\\AppData\\Local\\Temp\\tmp80hriwaa.png",
+    "raw_text": "```json\n{\n  \"chart_title\": \"INDIA STEEL TRADE INTELLIGENCE PLATFORM\",\n  \"x_axis_label\": \"Country\",\n  \"y_axis_label\": \"Dumping Margin | AD Duty\",\n  \"y_unit\": \"\",\n  \"data_points\": [\n    {\n      \"year\": \"China\",\n      \"value\": \"65.3%\",\n      \"dumping_margin\": \"18.2%\",\n      \"ad_duty\": \"18.2%\"\n    },\n    {\n      \"year\": \"Korea\",\n      \"value\": \"22.1%\",\n      \"dumping_margin\": \"5.4%\",\n      \"ad_duty\": \"5.4%\"\n    },\n    {\n      \"year\": \"Japan\",\n      \"value\": \"19.8%\",\n      \"dumping_margin\": \"4.9%\",\n      \"ad_duty\": \"4.9%\"\n    }\n  ]\n}\n```",
+    "structured": [
+      {
+        "year": "China",
+        "value": "65.3%",
+        "dumping_margin": "18.2%",
+        "ad_duty": "18.2%"
+      },
+      {
+        "year": "Korea",
+        "value": "22.1%",
+        "dumping_margin": "5.4%",
+        "ad_duty": "5.4%"
+      },
+      {
+        "year": "Japan",
+        "value": "19.8%",
+        "dumping_margin": "4.9%",
+        "ad_duty": "4.9%"
+      }
+    ],
+    "model": "Qwen/Qwen2-VL-2B-Instruct",
+    "test_case": "steel_production_chart"
+  }
+]

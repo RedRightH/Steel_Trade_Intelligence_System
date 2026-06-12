@@ -201,6 +201,28 @@ Reward accuracy reaching 100% from epoch 1.4 onward confirms the model learned t
 
 ---
 
+## Multimodal Extraction Results (Qwen2-VL-2B)
+
+**Model:** Qwen/Qwen2-VL-2B-Instruct (4-bit, 1.5 GB VRAM)  
+**Script:** `multimodal/qwen_vl_extract.py`  
+**Results file:** `multimodal/vl_test_results.json`
+
+| Test case | Document type | Parsed | Output |
+|-----------|--------------|--------|--------|
+| AD_investigation_table | Anti-dumping investigation table (countries, margins, duties) | **PASS** | List of 2 investigation records; keys: investigation_id, product, countries, date_of_initiation, investigating_authority |
+| tariff_schedule_page | HS code tariff schedule (BCD, IGST rates) | **PASS** | List of 16 tariff entries; keys: hs_code, description, bcd_pct, igst_pct, total_incidence_pct |
+| steel_production_chart | Bar/line chart (India steel production by FY) | **PASS** | List of 3 data points; keys: year, value, dumping_margin, ad_duty |
+
+**Parser notes:**
+- Model wraps output in ` ```json ``` ` fences — stripped via regex before parsing
+- Try array `[...]` before object `{...}` (AD table and tariff schedule return arrays)
+- Partial-array recovery added: if `max_new_tokens` truncates mid-item, complete items up to last `}` are salvaged
+- `max_new_tokens` set to 1024 (512 was too short for 16-item tariff schedule)
+
+**Gate: 3/3 PASS**
+
+---
+
 ## Guardrails (Week 1 Day 5 Gate — completed retroactively)
 
 **Module:** `steel_rag/guardrails.py`  
@@ -228,7 +250,7 @@ Reward accuracy reaching 100% from epoch 1.4 onward confirms the model learned t
 | DPO gate test | ✅ Documented | NLI 0.938 vs Groq 1.000; keep Groq in production |
 | Guardrails (is_in_domain + red-team) | ✅ Complete | 20/20 gate pass |
 | vLLM serving setup | ✅ Written | vllm/setup_vllm_colab.py; run locally or on Colab |
-| Multimodal (Qwen2-VL) | ✅ Written | multimodal/qwen_vl_extract.py; 3 test cases defined |
+| Multimodal (Qwen2-VL) | ✅ Complete | multimodal/qwen_vl_extract.py; **3/3 test cases pass** (JSON parsed: AD table 2 items, tariff schedule 16 items, chart 3 items) |
 | Semantic caching | ✅ Built + benchmarked | cosine ≥ 0.92, 24h TTL; **60% hit rate** on 20-query test (plan target: 20–35%) |
 | FastAPI backend | ✅ Live | api.py; 7 routes; /health verified |
 | Vercel deployment config | ✅ Written | vercel.json; deploy to Vercel (static) + Render (API) |

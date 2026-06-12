@@ -18,6 +18,7 @@ Model: Qwen/Qwen2-VL-7B-Instruct (7B, 4-bit, ~6GB VRAM on T4)
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -105,7 +106,7 @@ def extract_from_image(image_path: str, prompt: str = None) -> dict:
     ).to("cuda")
 
     with torch.no_grad():
-        output_ids = _model.generate(**inputs, max_new_tokens=512)
+        output_ids = _model.generate(**inputs, max_new_tokens=1024)
 
     trimmed = [
         out[len(inp):]
@@ -113,21 +114,43 @@ def extract_from_image(image_path: str, prompt: str = None) -> dict:
     ]
     raw_text = _processor.batch_decode(trimmed, skip_special_tokens=True)[0]
 
-    # Try to parse JSON from the response
+    # Strip markdown code fences before JSON parsing (model wraps output in ```json ... ```)
+    clean = raw_text.strip()
+    if clean.startswith("```"):
+        clean = re.sub(r"^```(?:json)?\s*", "", clean)
+        clean = re.sub(r"\s*```$", "", clean.rstrip())
+
     structured = None
-    try:
-        start = raw_text.find("{")
-        end   = raw_text.rfind("}") + 1
-        if start != -1 and end > start:
-            structured = json.loads(raw_text[start:end])
-    except json.JSONDecodeError:
-        pass
+    # Try array first, then object
+    for start_char, end_char in [("[", "]"), ("{", "}")]:
+        try:
+            start = clean.find(start_char)
+            end   = clean.rfind(end_char) + 1
+            if start != -1 and end > start:
+                structured = json.loads(clean[start:end])
+                break
+        except json.JSONDecodeError:
+            continue
+
+    # Partial-array recovery: if array was truncated (tokens ran out), salvage complete objects
+    if structured is None and clean.find("[") != -1:
+        try:
+            # Find last complete `}` before any trailing incomplete content
+            arr_start = clean.find("[")
+            last_brace = clean.rfind("},")
+            if last_brace == -1:
+                last_brace = clean.rfind("}")
+            if last_brace != -1:
+                partial = clean[arr_start : last_brace + 1] + "]"
+                structured = json.loads(partial)
+        except (json.JSONDecodeError, ValueError):
+            pass
 
     return {
         "image_path": str(image_path),
         "raw_text":   raw_text,
         "structured": structured,
-        "model":      "Qwen/Qwen2-VL-7B-Instruct",
+        "model":      "Qwen/Qwen2-VL-2B-Instruct",
     }
 
 
@@ -211,8 +234,12 @@ def run_tests(image_dir: str = None):
         results.append(result)
 
         print(f"    Raw output (first 300 chars): {result['raw_text'][:300]}")
-        if result["structured"]:
-            print(f"    Parsed JSON keys: {list(result['structured'].keys())}")
+        if result["structured"] is not None:
+            s = result["structured"]
+            if isinstance(s, list):
+                print(f"    Parsed JSON: list of {len(s)} item(s), first keys: {list(s[0].keys()) if s else []}")
+            else:
+                print(f"    Parsed JSON keys: {list(s.keys())}")
         else:
             print("    Could not parse JSON from output (raw text returned)")
 
