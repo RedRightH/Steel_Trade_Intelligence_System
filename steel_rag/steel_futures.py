@@ -74,6 +74,19 @@ IMPACT_MULTIPLIERS = {
 
 _price_cache: dict = {}   # in-memory cache
 
+# Event-study calibration (written by eval/event_study_calibration.py).
+# Scales the literature-based futures multipliers to observed HRC=F abnormal returns.
+CALIBRATION_PATH = CACHE_DIR / "impact_calibration.json"
+
+
+def _load_calibration() -> dict:
+    if CALIBRATION_PATH.exists():
+        try:
+            return json.loads(CALIBRATION_PATH.read_text())
+        except Exception:
+            pass
+    return {}
+
 
 # ── Data fetching ─────────────────────────────────────────────────────────────
 
@@ -157,9 +170,17 @@ def compute_technicals(df: "pd.DataFrame") -> "pd.DataFrame":
 
 # ── Prophet price forecast ────────────────────────────────────────────────────
 
-def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS) -> dict:
+def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS,
+                   gpr_df: "pd.DataFrame | None" = None) -> dict:
     """
-    Run Prophet on Close prices.
+    Run Prophet on Close prices, optionally conditioned on the Steel-GPR index.
+
+    gpr_df: optional DataFrame with columns [date, steel_gpr_index] (from
+    load_steel_gpr_index()). When provided, the index is merged as an external
+    regressor so news-driven geopolitical risk shifts the price forecast.
+    Days with no scored articles are filled with the baseline value 100;
+    future days hold the mean of the last 5 observed index values.
+
     Returns:
       {
         "forecast":  DataFrame with ds, yhat, yhat_lower, yhat_upper,
@@ -169,6 +190,9 @@ def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS) -> dict:
         "trend":     "bullish" | "bearish" | "neutral",
         "change_pct_30": float,
         "change_pct_60": float,
+        "gpr_used":  bool,
+        "gpr_coef":  float | None,   # regressor beta (price units per index point)
+        "gpr_future_level": float | None,
       }
     """
     from prophet import Prophet
@@ -183,6 +207,18 @@ def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS) -> dict:
         "y":  close.values,
     })
 
+    # ── Steel-GPR regressor (news risk → price forecast link) ────────────────
+    gpr_used, gpr_future_level = False, None
+    if gpr_df is not None and not gpr_df.empty and "steel_gpr_index" in gpr_df.columns:
+        g = gpr_df[["date", "steel_gpr_index"]].copy()
+        g["date"] = pd.to_datetime(g["date"]).dt.tz_localize(None)
+        g = g.rename(columns={"date": "ds", "steel_gpr_index": "gpr"})
+        prophet_df = prophet_df.merge(g, on="ds", how="left")
+        # Baseline=100 on days with no scored articles (index is normalised to 100)
+        prophet_df["gpr"] = prophet_df["gpr"].fillna(100.0)
+        gpr_future_level = float(g["gpr"].tail(5).mean())
+        gpr_used = True
+
     model = Prophet(
         daily_seasonality=False,
         weekly_seasonality=True,
@@ -191,6 +227,9 @@ def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS) -> dict:
         seasonality_mode="multiplicative",
         interval_width=0.80,
     )
+    if gpr_used:
+        model.add_regressor("gpr", mode="additive")
+
     # Suppress Stan output
     import logging
     logging.getLogger("prophet").setLevel(logging.ERROR)
@@ -198,7 +237,11 @@ def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS) -> dict:
 
     model.fit(prophet_df)
 
-    future   = model.make_future_dataframe(periods=days, freq="B")  # business days
+    future = model.make_future_dataframe(periods=days, freq="B")  # business days
+    if gpr_used:
+        # Historical days: actual index (baseline-filled); future days: hold recent level
+        hist_gpr = prophet_df.set_index("ds")["gpr"]
+        future["gpr"] = future["ds"].map(hist_gpr).fillna(gpr_future_level)
     forecast = model.predict(future)
 
     current     = float(close.iloc[-1])
@@ -217,6 +260,18 @@ def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS) -> dict:
     elif chg30 < -2: trend = "bearish"
     else:            trend = "neutral"
 
+    # Extract the fitted GPR regressor coefficient (price units per index point)
+    gpr_coef = None
+    if gpr_used:
+        try:
+            from prophet.utilities import regressor_coefficients
+            rc = regressor_coefficients(model)
+            row = rc[rc["regressor"] == "gpr"]
+            if not row.empty:
+                gpr_coef = float(row["coef"].iloc[0])
+        except Exception:
+            pass
+
     return {
         "forecast":      forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]],
         "current":       current,
@@ -225,6 +280,9 @@ def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS) -> dict:
         "trend":         trend,
         "change_pct_30": chg30,
         "change_pct_60": chg60,
+        "gpr_used":      gpr_used,
+        "gpr_coef":      gpr_coef,
+        "gpr_future_level": gpr_future_level,
     }
 
 
@@ -419,6 +477,18 @@ def analyze_news_impact(announcement: str, rag_context: str = "") -> dict:
     futures_impact_pct    = mult["futures"]    * risk_scale * persist_scale
     trade_flow_impact_pct = mult["trade_flow"] * risk_scale * persist_scale
 
+    # Event-study calibration: scale futures impact to observed HRC=F abnormal
+    # returns (per-type ratio when available, else global factor k)
+    calib = _load_calibration()
+    calib_factor = None
+    if calib:
+        calib_factor = (calib.get("per_type_ratios", {}).get(event_type)
+                        or calib.get("calibration_factor"))
+        if calib_factor:
+            # Clip: per-type ratios come from few events each; cap leverage
+            calib_factor = max(-2.0, min(2.5, float(calib_factor)))
+            futures_impact_pct *= calib_factor
+
     # Tariff events: override trade flow with gravity-model elasticity (ε = -1.5)
     if event_type in ("TARIFF_INCREASE", "TARIFF_DECREASE", "ANTIDUMPING_LEVY", "SAFEGUARD_DUTY"):
         # Extract tariff % from text if mentioned; otherwise use risk_score as proxy
@@ -486,6 +556,7 @@ def analyze_news_impact(announcement: str, rag_context: str = "") -> dict:
         # Quantified impact
         "futures_impact_pct":     round(futures_impact_pct, 2),
         "trade_flow_impact_pct":  round(trade_flow_impact_pct, 2),
+        "calibration_factor":     calib_factor,
         "current_hrc_usd":        current_hrc,
         "scenarios":              scenarios,
         "layer":                  3 if l3 else (2 if l2 else 1),
@@ -625,12 +696,13 @@ def get_futures_snapshot() -> dict:
             "chg_pct_5d":  round(chg5, 2),
         }
 
-    # Prophet forecast for HRC futures
+    # Prophet forecast for HRC futures, conditioned on the Steel-GPR news index
     hrc_forecast = {}
     if "HRC=F" in data and not data["HRC=F"].empty:
         try:
             df_hrc = compute_technicals(data["HRC=F"])
-            hrc_forecast = forecast_price(df_hrc, days=FORECAST_DAYS)
+            gpr_df = load_steel_gpr_index()
+            hrc_forecast = forecast_price(df_hrc, days=FORECAST_DAYS, gpr_df=gpr_df)
         except Exception as e:
             print(f"[WARN] HRC forecast failed: {e}")
 

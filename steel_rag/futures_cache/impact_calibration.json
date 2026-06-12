@@ -1,0 +1,13 @@
+{
+  "calibration_factor": 1.178,
+  "source": "eval/event_study_calibration.py",
+  "n_events": 10,
+  "sign_agreement_rate": 0.6,
+  "per_type_ratios": {
+    "TARIFF_INCREASE": -0.355,
+    "DEMAND_SURGE": 1.339,
+    "SAFEGUARD_DUTY": 0.092,
+    "ANTIDUMPING_LEVY": 5.076,
+    "TRADE_AGREEMENT": 1.017
+  }
+}

@@ -117,8 +117,55 @@ Added a complete market intelligence layer:
 |-----------|---------------|
 | Price data | yfinance: HRC=F, SLX, TATASTEEL.NS, SAIL.NS, JSWSTEEL.NS, MT, NUE |
 | Technical indicators | MA20/50, RSI-14, Bollinger Bands (±2σ) |
-| Price forecast | Meta Prophet, 60-day horizon, multiplicative seasonality, 80% CI |
+| Price forecast | Meta Prophet, 60-day horizon, multiplicative seasonality, 80% CI, **Steel-GPR external regressor** |
 | News impact | 3-layer AI-GPR → bull/base/bear scenarios → gravity model trade flow Δ |
+
+---
+
+## News → Futures → Markets Dependency Chain (Integrated)
+
+The three pipelines are unified into one dependency chain (see `eval/test_news_futures_chain.py`):
+
+```
+News event ──► 3-layer AI-GPR scoring ──► calibrated futures impact (event-study factors)
+     │                                          │
+     └──► Steel-GPR daily index ──► Prophet regressor ──► GPR-conditioned price forecast
+     │
+     └──► spillover countries ──► market opportunity ranker ──► flagged opportunity list
+```
+
+### Event study calibration (`eval/event_study_calibration.py`)
+
+10 documented steel trade events (Sep 2024 – Jun 2025) vs actual HRC=F abnormal returns
+(window: close[t−1] → close[t+5], drift-adjusted):
+
+| Metric | Value |
+|--------|-------|
+| Sign agreement | 6/10 = 60% |
+| Pearson correlation (predicted, actual) | 0.395 |
+| Global calibration factor k | 1.178 |
+
+**Key finding:** the literature-based `TARIFF_INCREASE` multiplier (−0.8, bearish) had the
+**wrong sign for HRC=F** — all three US Section 232/301 tariff events *raised* US domestic
+HRC prices (import protection lifts the domestic benchmark). The per-type calibration ratio
+(−0.355) flips this sign automatically at runtime. Per-type ratios are clipped to [−2.0, 2.5]
+since some come from single events. Calibration file: `steel_rag/futures_cache/impact_calibration.json`.
+
+### Market opportunity ranker (`steel_rag/market_opportunity.py`)
+
+`score = 0.40·z(gravity gap) + 0.30·z(6m momentum) + 0.20·z(ln size) + 0.10·FTA`
+
+Gravity gap = XGBoost gravity model predicted vs actual exports (under-served markets score
+higher). 83 markets ranked; top signals: Russia (gap +116%), Japan, Myanmar, Bangladesh.
+`markets_affected_by_event()` maps a news-impact analysis onto the ranking, flagging
+boosted / at-risk markets. Full ranking: `eval/market_opportunities.json`.
+
+### GPR-conditioned forecast
+
+`forecast_price(df, gpr_df=load_steel_gpr_index())` adds the Steel-GPR daily index as a
+Prophet external regressor (baseline 100 on days without scored articles; future days hold
+the recent 5-day mean). Active in `get_futures_snapshot()` → dashboard. With only days of
+index history the regressor beta is noisy; it sharpens as the RSS daemon accumulates data.
 
 ---
 

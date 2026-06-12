@@ -1,0 +1,23 @@
+{
+  "passed": 4,
+  "total": 4,
+  "gate_pass": true,
+  "gates": {
+    "gpr_regressor_active": {
+      "pass": true,
+      "detail": "gpr_used=True, beta=-5.2335493725, target_30=1140.1 (-5.4%)"
+    },
+    "calibration_applied": {
+      "pass": true,
+      "detail": "calib_file=True, factor=2.5, futures=7.88%, trade_flow=27.88%, event_type=ANTIDUMPING_LEVY"
+    },
+    "ranker_output": {
+      "pass": true,
+      "detail": "15 markets ranked, top: RUSSIA(0.933), JAPAN(0.836), MYANMAR(0.649)"
+    },
+    "event_market_mapping": {
+      "pass": true,
+      "detail": "resolved=['CHINA P RP'], diversion=positive, flags=['CHINA P RP']"
+    }
+  }
+}

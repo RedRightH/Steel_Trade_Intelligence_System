@@ -1,0 +1,832 @@
+[
+  {
+    "rank": 1,
+    "country": "RUSSIA",
+    "actual_usd_m": 56.36,
+    "predicted_usd_m": 121.9800033569336,
+    "gravity_gap_pct": 116.43,
+    "momentum_pct": 135.18,
+    "rta": 0,
+    "opportunity_score": 0.933
+  },
+  {
+    "rank": 2,
+    "country": "JAPAN",
+    "actual_usd_m": 139.36,
+    "predicted_usd_m": 164.10000610351562,
+    "gravity_gap_pct": 17.75,
+    "momentum_pct": 200.0,
+    "rta": 1,
+    "opportunity_score": 0.836
+  },
+  {
+    "rank": 3,
+    "country": "MYANMAR",
+    "actual_usd_m": 4.36,
+    "predicted_usd_m": 6.860000133514404,
+    "gravity_gap_pct": 57.24,
+    "momentum_pct": 200.0,
+    "rta": 1,
+    "opportunity_score": 0.649
+  },
+  {
+    "rank": 4,
+    "country": "AUSTRIA",
+    "actual_usd_m": 1.16,
+    "predicted_usd_m": 2.440000057220459,
+    "gravity_gap_pct": 110.19,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.634
+  },
+  {
+    "rank": 5,
+    "country": "BANGLADESH PR",
+    "actual_usd_m": 100.76,
+    "predicted_usd_m": 97.2699966430664,
+    "gravity_gap_pct": -3.46,
+    "momentum_pct": 196.66,
+    "rta": 1,
+    "opportunity_score": 0.611
+  },
+  {
+    "rank": 6,
+    "country": "UKRAINE",
+    "actual_usd_m": 1.69,
+    "predicted_usd_m": 3.1700000762939453,
+    "gravity_gap_pct": 87.6,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.582
+  },
+  {
+    "rank": 7,
+    "country": "HONG KONG",
+    "actual_usd_m": 0.79,
+    "predicted_usd_m": 3.059999942779541,
+    "gravity_gap_pct": 287.44,
+    "momentum_pct": 37.21,
+    "rta": 0,
+    "opportunity_score": 0.572
+  },
+  {
+    "rank": 8,
+    "country": "CHINA P RP",
+    "actual_usd_m": 153.84,
+    "predicted_usd_m": 197.50999450683594,
+    "gravity_gap_pct": 28.38,
+    "momentum_pct": 116.77,
+    "rta": 0,
+    "opportunity_score": 0.546
+  },
+  {
+    "rank": 9,
+    "country": "SWITZERLAND",
+    "actual_usd_m": 3.8,
+    "predicted_usd_m": 9.670000076293945,
+    "gravity_gap_pct": 154.37,
+    "momentum_pct": 71.07,
+    "rta": 0,
+    "opportunity_score": 0.519
+  },
+  {
+    "rank": 10,
+    "country": "CANADA",
+    "actual_usd_m": 59.51,
+    "predicted_usd_m": 61.54999923706055,
+    "gravity_gap_pct": 3.43,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.516
+  },
+  {
+    "rank": 11,
+    "country": "PHILIPPINES",
+    "actual_usd_m": 21.86,
+    "predicted_usd_m": 33.04999923706055,
+    "gravity_gap_pct": 51.19,
+    "momentum_pct": 107.49,
+    "rta": 1,
+    "opportunity_score": 0.51
+  },
+  {
+    "rank": 12,
+    "country": "NEPAL",
+    "actual_usd_m": 464.14,
+    "predicted_usd_m": 309.3599853515625,
+    "gravity_gap_pct": -33.35,
+    "momentum_pct": 200.0,
+    "rta": 1,
+    "opportunity_score": 0.494
+  },
+  {
+    "rank": 13,
+    "country": "GERMANY",
+    "actual_usd_m": 107.97,
+    "predicted_usd_m": 142.9199981689453,
+    "gravity_gap_pct": 32.37,
+    "momentum_pct": 100.05,
+    "rta": 0,
+    "opportunity_score": 0.472
+  },
+  {
+    "rank": 14,
+    "country": "INDONESIA",
+    "actual_usd_m": 103.78,
+    "predicted_usd_m": 131.9600067138672,
+    "gravity_gap_pct": 27.15,
+    "momentum_pct": 70.68,
+    "rta": 1,
+    "opportunity_score": 0.434
+  },
+  {
+    "rank": 15,
+    "country": "ITALY",
+    "actual_usd_m": 749.3,
+    "predicted_usd_m": 483.79998779296875,
+    "gravity_gap_pct": -35.43,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.427
+  },
+  {
+    "rank": 16,
+    "country": "ETHIOPIA",
+    "actual_usd_m": 6.03,
+    "predicted_usd_m": 7.730000019073486,
+    "gravity_gap_pct": 28.16,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.413
+  },
+  {
+    "rank": 17,
+    "country": "FINLAND",
+    "actual_usd_m": 3.16,
+    "predicted_usd_m": 4.309999942779541,
+    "gravity_gap_pct": 36.3,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.384
+  },
+  {
+    "rank": 18,
+    "country": "OMAN",
+    "actual_usd_m": 50.34,
+    "predicted_usd_m": 48.310001373291016,
+    "gravity_gap_pct": -4.03,
+    "momentum_pct": 185.52,
+    "rta": 0,
+    "opportunity_score": 0.381
+  },
+  {
+    "rank": 19,
+    "country": "POLAND",
+    "actual_usd_m": 107.42,
+    "predicted_usd_m": 88.9000015258789,
+    "gravity_gap_pct": -17.24,
+    "momentum_pct": 194.5,
+    "rta": 0,
+    "opportunity_score": 0.379
+  },
+  {
+    "rank": 20,
+    "country": "HUNGARY",
+    "actual_usd_m": 0.68,
+    "predicted_usd_m": 2.6600000858306885,
+    "gravity_gap_pct": 291.71,
+    "momentum_pct": -27.91,
+    "rta": 0,
+    "opportunity_score": 0.345
+  },
+  {
+    "rank": 21,
+    "country": "COSTA RICA",
+    "actual_usd_m": 1.5,
+    "predicted_usd_m": 2.069999933242798,
+    "gravity_gap_pct": 38.26,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.303
+  },
+  {
+    "rank": 22,
+    "country": "IRAN",
+    "actual_usd_m": 0.77,
+    "predicted_usd_m": 1.4600000381469727,
+    "gravity_gap_pct": 89.55,
+    "momentum_pct": 134.78,
+    "rta": 0,
+    "opportunity_score": 0.274
+  },
+  {
+    "rank": 23,
+    "country": "U ARAB EMTS",
+    "actual_usd_m": 448.59,
+    "predicted_usd_m": 306.760009765625,
+    "gravity_gap_pct": -31.62,
+    "momentum_pct": 119.59,
+    "rta": 1,
+    "opportunity_score": 0.244
+  },
+  {
+    "rank": 24,
+    "country": "NETHERLAND",
+    "actual_usd_m": 235.99,
+    "predicted_usd_m": 145.14999389648438,
+    "gravity_gap_pct": -38.49,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.239
+  },
+  {
+    "rank": 25,
+    "country": "ARGENTINA",
+    "actual_usd_m": 24.01,
+    "predicted_usd_m": 20.530000686645508,
+    "gravity_gap_pct": -14.51,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.236
+  },
+  {
+    "rank": 26,
+    "country": "ECUADOR",
+    "actual_usd_m": 5.61,
+    "predicted_usd_m": 5.769999980926514,
+    "gravity_gap_pct": 2.83,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.212
+  },
+  {
+    "rank": 27,
+    "country": "THAILAND",
+    "actual_usd_m": 81.16,
+    "predicted_usd_m": 72.29000091552734,
+    "gravity_gap_pct": -10.93,
+    "momentum_pct": 98.19,
+    "rta": 1,
+    "opportunity_score": 0.186
+  },
+  {
+    "rank": 28,
+    "country": "KOREA RP",
+    "actual_usd_m": 252.12,
+    "predicted_usd_m": 126.5999984741211,
+    "gravity_gap_pct": -49.78,
+    "momentum_pct": 200.0,
+    "rta": 1,
+    "opportunity_score": 0.171
+  },
+  {
+    "rank": 29,
+    "country": "COLOMBIA",
+    "actual_usd_m": 16.04,
+    "predicted_usd_m": 13.140000343322754,
+    "gravity_gap_pct": -18.08,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.148
+  },
+  {
+    "rank": 30,
+    "country": "MEXICO",
+    "actual_usd_m": 79.27,
+    "predicted_usd_m": 83.13999938964844,
+    "gravity_gap_pct": 4.88,
+    "momentum_pct": 74.16,
+    "rta": 0,
+    "opportunity_score": 0.144
+  },
+  {
+    "rank": 31,
+    "country": "BELGIUM",
+    "actual_usd_m": 285.06,
+    "predicted_usd_m": 150.75999450683594,
+    "gravity_gap_pct": -47.11,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": 0.132
+  },
+  {
+    "rank": 32,
+    "country": "IRELAND",
+    "actual_usd_m": 3.41,
+    "predicted_usd_m": 7.75,
+    "gravity_gap_pct": 127.29,
+    "momentum_pct": -12.74,
+    "rta": 0,
+    "opportunity_score": 0.128
+  },
+  {
+    "rank": 33,
+    "country": "SUDAN",
+    "actual_usd_m": 0.49,
+    "predicted_usd_m": 1.899999976158142,
+    "gravity_gap_pct": 286.9,
+    "momentum_pct": -89.06,
+    "rta": 0,
+    "opportunity_score": 0.089
+  },
+  {
+    "rank": 34,
+    "country": "AUSTRALIA",
+    "actual_usd_m": 45.0,
+    "predicted_usd_m": 38.689998626708984,
+    "gravity_gap_pct": -14.02,
+    "momentum_pct": 128.4,
+    "rta": 0,
+    "opportunity_score": 0.081
+  },
+  {
+    "rank": 35,
+    "country": "SPAIN",
+    "actual_usd_m": 216.98,
+    "predicted_usd_m": 149.2899932861328,
+    "gravity_gap_pct": -31.2,
+    "momentum_pct": 122.62,
+    "rta": 0,
+    "opportunity_score": 0.067
+  },
+  {
+    "rank": 36,
+    "country": "MALDIVES",
+    "actual_usd_m": 19.43,
+    "predicted_usd_m": 14.1899995803833,
+    "gravity_gap_pct": -26.96,
+    "momentum_pct": 167.16,
+    "rta": 1,
+    "opportunity_score": 0.063
+  },
+  {
+    "rank": 37,
+    "country": "ROMANIA",
+    "actual_usd_m": 29.96,
+    "predicted_usd_m": 20.8799991607666,
+    "gravity_gap_pct": -30.32,
+    "momentum_pct": 188.55,
+    "rta": 0,
+    "opportunity_score": 0.048
+  },
+  {
+    "rank": 38,
+    "country": "VIETNAM SOC REP",
+    "actual_usd_m": 447.86,
+    "predicted_usd_m": 178.0399932861328,
+    "gravity_gap_pct": -60.25,
+    "momentum_pct": 200.0,
+    "rta": 1,
+    "opportunity_score": 0.041
+  },
+  {
+    "rank": 39,
+    "country": "ZAMBIA",
+    "actual_usd_m": 0.48,
+    "predicted_usd_m": 1.3700000047683716,
+    "gravity_gap_pct": 184.82,
+    "momentum_pct": -23.26,
+    "rta": 0,
+    "opportunity_score": 0.04
+  },
+  {
+    "rank": 40,
+    "country": "SRI LANKA DSR",
+    "actual_usd_m": 50.46,
+    "predicted_usd_m": 58.81999969482422,
+    "gravity_gap_pct": 16.56,
+    "momentum_pct": 0.22,
+    "rta": 1,
+    "opportunity_score": 0.032
+  },
+  {
+    "rank": 41,
+    "country": "BAHARAIN IS",
+    "actual_usd_m": 19.82,
+    "predicted_usd_m": 15.579999923706055,
+    "gravity_gap_pct": -21.38,
+    "momentum_pct": 163.12,
+    "rta": 0,
+    "opportunity_score": 0.016
+  },
+  {
+    "rank": 42,
+    "country": "CHILE",
+    "actual_usd_m": 10.18,
+    "predicted_usd_m": 10.960000038146973,
+    "gravity_gap_pct": 7.64,
+    "momentum_pct": 76.59,
+    "rta": 1,
+    "opportunity_score": 0.015
+  },
+  {
+    "rank": 43,
+    "country": "BRAZIL",
+    "actual_usd_m": 133.82,
+    "predicted_usd_m": 83.63999938964844,
+    "gravity_gap_pct": -37.5,
+    "momentum_pct": 148.38,
+    "rta": 0,
+    "opportunity_score": 0.009
+  },
+  {
+    "rank": 44,
+    "country": "DJIBOUTI",
+    "actual_usd_m": 3.17,
+    "predicted_usd_m": 3.9800000190734863,
+    "gravity_gap_pct": 25.51,
+    "momentum_pct": 107.02,
+    "rta": 0,
+    "opportunity_score": 0.003
+  },
+  {
+    "rank": 45,
+    "country": "PERU",
+    "actual_usd_m": 15.83,
+    "predicted_usd_m": 10.930000305175781,
+    "gravity_gap_pct": -30.92,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": -0.002
+  },
+  {
+    "rank": 46,
+    "country": "TANZANIA REP",
+    "actual_usd_m": 18.43,
+    "predicted_usd_m": 13.859999656677246,
+    "gravity_gap_pct": -24.79,
+    "momentum_pct": 171.96,
+    "rta": 0,
+    "opportunity_score": -0.002
+  },
+  {
+    "rank": 47,
+    "country": "MALAYSIA",
+    "actual_usd_m": 46.09,
+    "predicted_usd_m": 43.650001525878906,
+    "gravity_gap_pct": -5.3,
+    "momentum_pct": 46.09,
+    "rta": 1,
+    "opportunity_score": -0.007
+  },
+  {
+    "rank": 48,
+    "country": "TURKEY",
+    "actual_usd_m": 298.69,
+    "predicted_usd_m": 129.8800048828125,
+    "gravity_gap_pct": -56.52,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": -0.032
+  },
+  {
+    "rank": 49,
+    "country": "GREECE",
+    "actual_usd_m": 33.97,
+    "predicted_usd_m": 19.59000015258789,
+    "gravity_gap_pct": -42.34,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": -0.062
+  },
+  {
+    "rank": 50,
+    "country": "U S A",
+    "actual_usd_m": 509.06,
+    "predicted_usd_m": 345.4800109863281,
+    "gravity_gap_pct": -32.13,
+    "momentum_pct": 52.16,
+    "rta": 0,
+    "opportunity_score": -0.072
+  },
+  {
+    "rank": 51,
+    "country": "SAUDI ARAB",
+    "actual_usd_m": 73.73,
+    "predicted_usd_m": 81.56999969482422,
+    "gravity_gap_pct": 10.63,
+    "momentum_pct": -2.84,
+    "rta": 0,
+    "opportunity_score": -0.076
+  },
+  {
+    "rank": 52,
+    "country": "QATAR",
+    "actual_usd_m": 18.45,
+    "predicted_usd_m": 19.299999237060547,
+    "gravity_gap_pct": 4.59,
+    "momentum_pct": 62.65,
+    "rta": 0,
+    "opportunity_score": -0.081
+  },
+  {
+    "rank": 53,
+    "country": "ISRAEL",
+    "actual_usd_m": 20.96,
+    "predicted_usd_m": 18.559999465942383,
+    "gravity_gap_pct": -11.44,
+    "momentum_pct": 97.33,
+    "rta": 0,
+    "opportunity_score": -0.093
+  },
+  {
+    "rank": 54,
+    "country": "U K",
+    "actual_usd_m": 363.36,
+    "predicted_usd_m": 141.6300048828125,
+    "gravity_gap_pct": -61.02,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": -0.102
+  },
+  {
+    "rank": 55,
+    "country": "ANGOLA",
+    "actual_usd_m": 2.76,
+    "predicted_usd_m": 3.7200000286102295,
+    "gravity_gap_pct": 34.74,
+    "momentum_pct": 57.72,
+    "rta": 0,
+    "opportunity_score": -0.118
+  },
+  {
+    "rank": 56,
+    "country": "IRAQ",
+    "actual_usd_m": 16.37,
+    "predicted_usd_m": 9.729999542236328,
+    "gravity_gap_pct": -40.58,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": -0.128
+  },
+  {
+    "rank": 57,
+    "country": "CAMEROON",
+    "actual_usd_m": 1.75,
+    "predicted_usd_m": 2.609999895095825,
+    "gravity_gap_pct": 49.42,
+    "momentum_pct": 42.5,
+    "rta": 0,
+    "opportunity_score": -0.136
+  },
+  {
+    "rank": 58,
+    "country": "SWEDEN",
+    "actual_usd_m": 10.79,
+    "predicted_usd_m": 8.649999618530273,
+    "gravity_gap_pct": -19.8,
+    "momentum_pct": 134.38,
+    "rta": 0,
+    "opportunity_score": -0.14
+  },
+  {
+    "rank": 59,
+    "country": "MAURITIUS",
+    "actual_usd_m": 8.63,
+    "predicted_usd_m": 4.78000020980835,
+    "gravity_gap_pct": -44.63,
+    "momentum_pct": 200.0,
+    "rta": 1,
+    "opportunity_score": -0.17
+  },
+  {
+    "rank": 60,
+    "country": "NEW ZEALAND",
+    "actual_usd_m": 4.9,
+    "predicted_usd_m": 5.659999847412109,
+    "gravity_gap_pct": 15.56,
+    "momentum_pct": 58.6,
+    "rta": 0,
+    "opportunity_score": -0.175
+  },
+  {
+    "rank": 61,
+    "country": "FRANCE",
+    "actual_usd_m": 116.6,
+    "predicted_usd_m": 71.2699966430664,
+    "gravity_gap_pct": -38.88,
+    "momentum_pct": 101.68,
+    "rta": 0,
+    "opportunity_score": -0.184
+  },
+  {
+    "rank": 62,
+    "country": "SINGAPORE",
+    "actual_usd_m": 21.35,
+    "predicted_usd_m": 28.5,
+    "gravity_gap_pct": 33.49,
+    "momentum_pct": -76.32,
+    "rta": 1,
+    "opportunity_score": -0.215
+  },
+  {
+    "rank": 63,
+    "country": "KUWAIT",
+    "actual_usd_m": 11.01,
+    "predicted_usd_m": 15.1899995803833,
+    "gravity_gap_pct": 37.94,
+    "momentum_pct": -34.99,
+    "rta": 0,
+    "opportunity_score": -0.232
+  },
+  {
+    "rank": 64,
+    "country": "PORTUGAL",
+    "actual_usd_m": 40.15,
+    "predicted_usd_m": 34.310001373291016,
+    "gravity_gap_pct": -14.55,
+    "momentum_pct": 37.3,
+    "rta": 0,
+    "opportunity_score": -0.243
+  },
+  {
+    "rank": 65,
+    "country": "UGANDA",
+    "actual_usd_m": 1.64,
+    "predicted_usd_m": 2.75,
+    "gravity_gap_pct": 67.46,
+    "momentum_pct": -19.19,
+    "rta": 0,
+    "opportunity_score": -0.252
+  },
+  {
+    "rank": 66,
+    "country": "EGYPT A RP",
+    "actual_usd_m": 112.22,
+    "predicted_usd_m": 43.52000045776367,
+    "gravity_gap_pct": -61.22,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": -0.255
+  },
+  {
+    "rank": 67,
+    "country": "SOUTH AFRICA",
+    "actual_usd_m": 69.42,
+    "predicted_usd_m": 28.079999923706055,
+    "gravity_gap_pct": -59.55,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": -0.279
+  },
+  {
+    "rank": 68,
+    "country": "MOZAMBIQUE",
+    "actual_usd_m": 3.91,
+    "predicted_usd_m": 4.550000190734863,
+    "gravity_gap_pct": 16.38,
+    "momentum_pct": 18.26,
+    "rta": 0,
+    "opportunity_score": -0.333
+  },
+  {
+    "rank": 69,
+    "country": "SLOVENIA",
+    "actual_usd_m": 8.14,
+    "predicted_usd_m": 5.269999980926514,
+    "gravity_gap_pct": -35.23,
+    "momentum_pct": 139.6,
+    "rta": 0,
+    "opportunity_score": -0.343
+  },
+  {
+    "rank": 70,
+    "country": "GHANA",
+    "actual_usd_m": 6.56,
+    "predicted_usd_m": 7.239999771118164,
+    "gravity_gap_pct": 10.38,
+    "momentum_pct": 1.92,
+    "rta": 0,
+    "opportunity_score": -0.368
+  },
+  {
+    "rank": 71,
+    "country": "CROATIA",
+    "actual_usd_m": 8.86,
+    "predicted_usd_m": 4.300000190734863,
+    "gravity_gap_pct": -51.45,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": -0.381
+  },
+  {
+    "rank": 72,
+    "country": "BULGARIA",
+    "actual_usd_m": 22.55,
+    "predicted_usd_m": 8.800000190734863,
+    "gravity_gap_pct": -60.99,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": -0.453
+  },
+  {
+    "rank": 73,
+    "country": "DENMARK",
+    "actual_usd_m": 45.17,
+    "predicted_usd_m": 24.200000762939453,
+    "gravity_gap_pct": -46.42,
+    "momentum_pct": 91.14,
+    "rta": 0,
+    "opportunity_score": -0.453
+  },
+  {
+    "rank": 74,
+    "country": "JORDAN",
+    "actual_usd_m": 3.01,
+    "predicted_usd_m": 2.809999942779541,
+    "gravity_gap_pct": -6.52,
+    "momentum_pct": 40.15,
+    "rta": 0,
+    "opportunity_score": -0.483
+  },
+  {
+    "rank": 75,
+    "country": "MADAGASCAR",
+    "actual_usd_m": 2.87,
+    "predicted_usd_m": 1.7000000476837158,
+    "gravity_gap_pct": -40.74,
+    "momentum_pct": 152.44,
+    "rta": 0,
+    "opportunity_score": -0.509
+  },
+  {
+    "rank": 76,
+    "country": "MOROCCO",
+    "actual_usd_m": 17.65,
+    "predicted_usd_m": 11.0600004196167,
+    "gravity_gap_pct": -37.36,
+    "momentum_pct": 65.67,
+    "rta": 0,
+    "opportunity_score": -0.521
+  },
+  {
+    "rank": 77,
+    "country": "ALGERIA",
+    "actual_usd_m": 32.55,
+    "predicted_usd_m": 10.670000076293945,
+    "gravity_gap_pct": -67.21,
+    "momentum_pct": 200.0,
+    "rta": 0,
+    "opportunity_score": -0.557
+  },
+  {
+    "rank": 78,
+    "country": "TUNISIA",
+    "actual_usd_m": 2.08,
+    "predicted_usd_m": 1.8899999856948853,
+    "gravity_gap_pct": -9.1,
+    "momentum_pct": 37.36,
+    "rta": 0,
+    "opportunity_score": -0.563
+  },
+  {
+    "rank": 79,
+    "country": "NIGERIA",
+    "actual_usd_m": 21.15,
+    "predicted_usd_m": 19.809999465942383,
+    "gravity_gap_pct": -6.31,
+    "momentum_pct": -59.5,
+    "rta": 0,
+    "opportunity_score": -0.567
+  },
+  {
+    "rank": 80,
+    "country": "NORWAY",
+    "actual_usd_m": 4.26,
+    "predicted_usd_m": 4.090000152587891,
+    "gravity_gap_pct": -3.96,
+    "momentum_pct": -42.27,
+    "rta": 0,
+    "opportunity_score": -0.69
+  },
+  {
+    "rank": 81,
+    "country": "SENEGAL",
+    "actual_usd_m": 4.05,
+    "predicted_usd_m": 3.430000066757202,
+    "gravity_gap_pct": -15.22,
+    "momentum_pct": -16.74,
+    "rta": 0,
+    "opportunity_score": -0.72
+  },
+  {
+    "rank": 82,
+    "country": "KENYA",
+    "actual_usd_m": 35.51,
+    "predicted_usd_m": 19.850000381469727,
+    "gravity_gap_pct": -44.1,
+    "momentum_pct": -53.17,
+    "rta": 0,
+    "opportunity_score": -0.928
+  },
+  {
+    "rank": 83,
+    "country": "ZIMBABWE",
+    "actual_usd_m": 1.28,
+    "predicted_usd_m": 1.190000057220459,
+    "gravity_gap_pct": -6.84,
+    "momentum_pct": -91.03,
+    "rta": 0,
+    "opportunity_score": -1.032
+  }
+]

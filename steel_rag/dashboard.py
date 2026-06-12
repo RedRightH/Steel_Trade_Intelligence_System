@@ -917,6 +917,14 @@ with tab5:
                 fc2.metric("30-day target", f"${fc['target_30']:.0f}", f"{fc['change_pct_30']:+.1f}%")
                 fc3.metric("60-day target", f"${fc['target_60']:.0f}", f"{fc['change_pct_60']:+.1f}%")
                 fc4.metric("Trend", f"{trend_icon} {fc['trend'].title()}")
+                if fc.get("gpr_used"):
+                    coef = fc.get("gpr_coef")
+                    coef_txt = f" · regressor β = {coef:+.3f} USD/index-pt" if coef is not None else ""
+                    st.caption(
+                        f"🌐 Forecast conditioned on the Steel-GPR news risk index "
+                        f"(future level held at {fc.get('gpr_future_level', 100):.0f}){coef_txt}. "
+                        f"The index is built daily from RSS articles scored by the 3-layer AI-GPR pipeline."
+                    )
 
     # ────────────────────────────────────────────────────────────────────────
     # Sub-tab 2 — News Impact Analyzer
@@ -972,26 +980,42 @@ with tab5:
                 st.error(f"Analysis failed: {impact['error']}")
             else:
                 # ── Summary banner ────────────────────────────────────────────
-                dir_color = {"positive": "🟢", "negative": "🔴", "neutral": "🟡"}.get(
-                    impact["direction_india_exports"], "⚪")
-                st.success(f"{dir_color} **{impact['event_type'].replace('_',' ').title()}** "
-                           f"(magnitude {impact['magnitude']}/3) · "
-                           f"Confidence {impact['confidence']:.0%}")
-                st.info(f"**Summary:** {impact['summary']}")
+                spill = impact.get("india_spillover", {}) or {}
+                role  = spill.get("india_role", "neutral")
+                dir_color = {"beneficiary": "🟢", "victim": "🔴", "neutral": "🟡"}.get(role, "⚪")
+                st.success(f"{dir_color} **{impact.get('event_type','OTHER').replace('_',' ').title()}** "
+                           f"· Risk score {impact.get('risk_score', 0):.2f}/1.0 "
+                           f"· Persistence: {impact.get('persistence','—')} "
+                           f"· India: {role}")
+                if impact.get("summary"):
+                    st.info(f"**Summary:** {impact['summary']}")
 
                 # ── KPI row ───────────────────────────────────────────────────
                 k1, k2, k3, k4 = st.columns(4)
-                k1.metric("Event Type",      impact["event_type"].replace("_", " ").title())
+                k1.metric("Event Type",      impact.get("event_type", "—").replace("_", " ").title())
                 k2.metric("Futures Δ",       f"{impact['futures_impact_pct']:+.1f}%",
-                          "Base-case HRC impact")
+                          "Calibrated HRC impact" if impact.get("calibration_factor")
+                          else "Base-case HRC impact")
                 k3.metric("Trade Flow Δ",    f"{impact['trade_flow_impact_pct']:+.1f}%",
                           "India export flow impact")
-                k4.metric("HRC Current",     f"${impact.get('current_hrc_usd', 0):.0f}")
+                k4.metric("HRC Current",     f"${impact.get('current_hrc_usd') or 0:.0f}")
 
-                if impact.get("affected_countries"):
-                    st.write("**Affected countries:**", ", ".join(impact["affected_countries"]))
+                if impact.get("calibration_factor"):
+                    st.caption(
+                        f"⚖️ Event-study calibration applied: ×{impact['calibration_factor']:.2f} "
+                        f"(from observed HRC=F abnormal returns around historical "
+                        f"{impact.get('event_type','').replace('_',' ').lower()} events — "
+                        f"see eval/event_study_results.json)"
+                    )
+
+                affected = (impact.get("respondent_countries", [])
+                            + impact.get("initiator_countries", []))
+                if affected:
+                    st.write("**Countries involved:**", ", ".join(affected))
                 if impact.get("affected_products"):
                     st.write("**Products:**", ", ".join(impact["affected_products"]))
+                if spill.get("india_spillover_summary"):
+                    st.write("**India spillover:**", spill["india_spillover_summary"])
 
                 # ── Scenario table ────────────────────────────────────────────
                 st.divider()
@@ -1027,6 +1051,35 @@ with tab5:
                 plt.tight_layout()
                 st.pyplot(fig)
                 plt.close(fig)
+
+                # ── Affected & opportunity markets (gravity + momentum ranker) ─
+                st.divider()
+                st.markdown("#### 🎯 Market Opportunities Under This Event")
+                try:
+                    with st.spinner("Ranking export markets (gravity gap + momentum)…"):
+                        from market_opportunity import markets_affected_by_event
+                        mk = markets_affected_by_event(impact, top_n=10)
+                    mk_df = pd.DataFrame(mk["opportunity_markets"])
+                    mk_df["event_flag"] = mk_df["event_flag"].map(
+                        {"boosted": "🟢 boosted", "at_risk": "🔴 at risk",
+                         "affected": "🟡 affected"}).fillna("")
+                    mk_df = mk_df.rename(columns={
+                        "rank": "#", "country": "Country",
+                        "actual_usd_m": "Actual $M/yr", "predicted_usd_m": "Gravity Potential $M/yr",
+                        "gravity_gap_pct": "Gap %", "momentum_pct": "6m Momentum %",
+                        "rta": "FTA", "opportunity_score": "Score", "event_flag": "Event Effect",
+                    })
+                    st.dataframe(mk_df.set_index("#"), use_container_width=True)
+                    if mk["affected_named"]:
+                        st.caption(f"Event directly involves: {', '.join(mk['affected_named'])} "
+                                   f"· Trade diversion for India: {mk['trade_diversion']}")
+                    st.caption(
+                        "Score = 0.40·z(gravity gap) + 0.30·z(6-month momentum) "
+                        "+ 0.20·z(market size) + 0.10·FTA. Gravity gap = XGBoost gravity "
+                        "model potential vs actual exports (under-served markets score higher)."
+                    )
+                except Exception as e:
+                    st.warning(f"Market ranking unavailable: {e}")
 
                 with st.expander("ℹ️ Model methodology"):
                     st.caption(impact.get("model_note", ""))
