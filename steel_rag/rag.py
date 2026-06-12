@@ -503,6 +503,27 @@ def _print_result(result: dict):
         print(f"  {s['excerpt'][:100]}...")
 
 
+def warmup():
+    """
+    Pre-load all lazy singletons so the first real user query is fast.
+    Call this at Streamlit startup and FastAPI @app.on_event('startup').
+    Moves the ~100s cold-start penalty to server boot, not first user query.
+    """
+    import time
+    t0 = time.time()
+    print("[rag] Warming up — loading embedder, vectorstore, BM25, reranker …")
+    _get_embeddings()
+    _get_vectorstore()
+    _bm25_search("warmup query steel trade india", k=1)   # loads BM25 pickle
+    _get_reranker()
+    # Fire one dummy Pinecone/FAISS query to warm the connection
+    try:
+        _get_vectorstore().similarity_search_with_score("anti-dumping India steel", k=1)
+    except Exception:
+        pass
+    print(f"[rag] Warm-up complete in {time.time()-t0:.1f}s — first query will be fast.")
+
+
 if __name__ == "__main__":
     backend = "Pinecone" if _USE_PINECONE else "FAISS"
     print(f"Steel RAG — Vector backend: {backend}")

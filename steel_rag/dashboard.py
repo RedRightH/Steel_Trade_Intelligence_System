@@ -99,6 +99,17 @@ with st.sidebar:
 
 st.divider()
 
+# ── Eagerly warm up RAG models on first load (prevents 100s cold-start) ────────
+@st.cache_resource(show_spinner="Warming up RAG models…")
+def _warmup_rag():
+    try:
+        from rag import warmup
+        warmup()
+    except Exception as e:
+        pass  # Non-fatal — queries still work, just slower on first call
+
+_warmup_rag()
+
 # ── tabs ──────────────────────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🔍 Intelligence Query",

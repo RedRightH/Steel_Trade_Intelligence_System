@@ -49,6 +49,21 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def startup_warmup():
+    """Pre-load embedder, Pinecone, BM25, reranker at boot — not on first query."""
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+    loop = asyncio.get_event_loop()
+    def _warm():
+        try:
+            from rag import warmup
+            warmup()
+        except Exception as e:
+            print(f"[startup] Warmup failed (non-fatal): {e}")
+    await loop.run_in_executor(ThreadPoolExecutor(max_workers=1), _warm)
+
+
 # ── Request / Response models ─────────────────────────────────────────────────
 
 class QueryRequest(BaseModel):
