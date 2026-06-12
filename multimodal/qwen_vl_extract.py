@@ -34,7 +34,7 @@ def _load_model():
     from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
     from transformers import BitsAndBytesConfig
 
-    MODEL_ID = "Qwen/Qwen2-VL-7B-Instruct"
+    MODEL_ID = "Qwen/Qwen2-VL-2B-Instruct"
 
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
