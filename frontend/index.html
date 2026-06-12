@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>India Steel Trade Intelligence Platform</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1117; color: #e0e0e0; min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    header {
+      width: 100%; background: #1a1d27; border-bottom: 1px solid #2d3147;
+      padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; color: #c8a84b; }
+    header span { font-size: 0.75rem; color: #666; }
+    .badge {
+      background: #1e3a1e; color: #4caf50; font-size: 0.7rem;
+      padding: 2px 8px; border-radius: 10px; border: 1px solid #2e5e2e;
+    }
+    main {
+      width: 100%; max-width: 900px; padding: 2rem 1rem; flex: 1;
+      display: flex; flex-direction: column; gap: 1.5rem;
+    }
+    .chat-area {
+      background: #1a1d27; border: 1px solid #2d3147; border-radius: 12px;
+      padding: 1.5rem; min-height: 400px; max-height: 500px;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;
+    }
+    .msg { display: flex; flex-direction: column; gap: 0.3rem; max-width: 85%; }
+    .msg.user   { align-self: flex-end; }
+    .msg.system { align-self: flex-start; }
+    .msg .bubble {
+      padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.9rem;
+      line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+    }
+    .msg.user   .bubble { background: #1e3358; color: #c9d9f5; border-radius: 12px 12px 4px 12px; }
+    .msg.system .bubble { background: #1f2537; color: #d0d0d0; border-radius: 12px 12px 12px 4px; }
+    .msg .meta { font-size: 0.68rem; color: #555; padding: 0 4px; }
+    .msg.user .meta { text-align: right; }
+    .sources {
+      margin-top: 0.4rem; font-size: 0.72rem; color: #666;
+      border-left: 2px solid #2d3147; padding-left: 0.6rem;
+    }
+    .input-area {
+      display: flex; gap: 0.75rem; align-items: flex-end;
+    }
+    textarea {
+      flex: 1; background: #1a1d27; border: 1px solid #2d3147;
+      border-radius: 10px; color: #e0e0e0; font-size: 0.9rem;
+      padding: 0.75rem 1rem; resize: none; outline: none;
+      font-family: inherit; line-height: 1.4; min-height: 52px; max-height: 160px;
+    }
+    textarea:focus { border-color: #c8a84b44; }
+    button {
+      background: #c8a84b; color: #0f1117; font-weight: 700; font-size: 0.85rem;
+      border: none; border-radius: 10px; padding: 0.75rem 1.25rem;
+      cursor: pointer; white-space: nowrap; height: 52px;
+    }
+    button:hover { background: #d4b45c; }
+    button:disabled { background: #3a3a3a; color: #666; cursor: not-allowed; }
+    .pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .pill {
+      background: #1f2537; border: 1px solid #2d3147; border-radius: 20px;
+      padding: 0.3rem 0.75rem; font-size: 0.75rem; color: #888;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .pill:hover { border-color: #c8a84b55; color: #c8a84b; }
+    .stats-bar {
+      display: flex; gap: 1.5rem; font-size: 0.72rem; color: #555;
+      background: #1a1d27; border: 1px solid #2d3147; border-radius: 8px;
+      padding: 0.5rem 1rem; align-items: center;
+    }
+    .stats-bar span b { color: #888; }
+    .tag { font-size: 0.68rem; padding: 1px 6px; border-radius: 4px; }
+    .tag.cache   { background: #1a3a1a; color: #4caf50; }
+    .tag.nocache { background: #1a1a3a; color: #5585ff; }
+    .tag.slow    { background: #3a1a1a; color: #ff7070; }
+    .typing { color: #555; font-size: 0.85rem; font-style: italic; padding: 0.5rem 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>India Steel Trade Intelligence</h1>
+    <span>RAG v3 · Pinecone · Hybrid BM25+Dense · BGE Reranker</span>
+  </div>
+  <div class="badge" id="status-badge">connecting…</div>
+</header>
+
+<main>
+  <div class="pills" id="pill-bar">
+    <div class="pill" onclick="ask(this)">Anti-dumping duties on Chinese HR coil?</div>
+    <div class="pill" onclick="ask(this)">How does EU CBAM affect Indian steel?</div>
+    <div class="pill" onclick="ask(this)">What is IS 2062 standard?</div>
+    <div class="pill" onclick="ask(this)">Which countries face AD investigation on electrogalvanized steel?</div>
+    <div class="pill" onclick="ask(this)">What triggers a safeguard investigation in India?</div>
+    <div class="pill" onclick="ask(this)">India-UAE CEPA and steel exports?</div>
+  </div>
+
+  <div class="chat-area" id="chat">
+    <div class="msg system">
+      <div class="bubble">
+Welcome to the India Steel Trade Intelligence Platform.
+
+Ask me anything about Indian steel trade policy — anti-dumping investigations, safeguard measures, CBAM, BIS standards, gravity model scenarios, or news impact analysis.
+
+I'm grounded in 5,640 document chunks from DGTR, WTO, BIS, and the Ministry of Steel.
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <textarea id="query" placeholder="Ask about Indian steel trade policy…" rows="2"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"></textarea>
+    <button onclick="send()" id="send-btn">Ask</button>
+  </div>
+
+  <div class="stats-bar" id="stats-bar">
+    <span><b>Cache:</b> —</span>
+    <span><b>Latency:</b> —</span>
+    <span><b>Agent:</b> —</span>
+  </div>
+</main>
+
+<script>
+  // ── Config ─────────────────────────────────────────────────────────────────
+  // Change this if running FastAPI on a different port or host
+  const API_BASE = "http://localhost:8000";
+
+  // ── Health check ───────────────────────────────────────────────────────────
+  async function checkHealth() {
+    try {
+      const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+      const d = await r.json();
+      const badge = document.getElementById("status-badge");
+      badge.textContent = d.status === "ok" ? "● API connected" : "⚠ API error";
+      badge.style.background = d.status === "ok" ? "#1e3a1e" : "#3a1a1a";
+      badge.style.color       = d.status === "ok" ? "#4caf50" : "#ff7070";
+    } catch {
+      const badge = document.getElementById("status-badge");
+      badge.textContent = "⚠ API offline";
+      badge.style.background = "#3a1a1a";
+      badge.style.color       = "#ff7070";
+    }
+  }
+
+  // ── Chat helpers ───────────────────────────────────────────────────────────
+  function addMsg(role, text, meta = null, sources = null) {
+    const chat = document.getElementById("chat");
+    const div  = document.createElement("div");
+    div.className = `msg ${role}`;
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+    div.appendChild(bubble);
+
+    if (meta) {
+      const m = document.createElement("div");
+      m.className = "meta";
+      m.innerHTML = meta;
+      div.appendChild(m);
+    }
+
+    if (sources && sources.length) {
+      const s = document.createElement("div");
+      s.className = "sources";
+      s.textContent = "Sources: " + sources.map(x => x.file_name || "—").join(", ");
+      div.appendChild(s);
+    }
+
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  }
+
+  function setTyping(show) {
+    let el = document.getElementById("typing");
+    if (show) {
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "typing"; el.className = "typing";
+        el.textContent = "Thinking…";
+        document.getElementById("chat").appendChild(el);
+      }
+    } else if (el) el.remove();
+    document.getElementById("chat").scrollTop = 9999;
+  }
+
+  function updateStats(resp) {
+    const bar = document.getElementById("stats-bar");
+    const cacheTag = resp.cache_hit
+      ? `<span class="tag cache">cache HIT ${resp.cache_sim !== null && resp.cache_sim !== undefined ? ("sim=" + resp.cache_sim) : ""}</span>`
+      : `<span class="tag nocache">cache MISS</span>`;
+    const latTag   = resp.latency_ms > 8000
+      ? `<span class="tag slow">${(resp.latency_ms/1000).toFixed(1)}s ⚠</span>`
+      : `${(resp.latency_ms/1000).toFixed(1)}s`;
+    bar.innerHTML = `<span><b>Cache:</b> ${cacheTag}</span><span><b>Latency:</b> ${latTag}</span><span><b>Agent:</b> ${resp.agent_used || "—"}</span>`;
+  }
+
+  // ── Main send ──────────────────────────────────────────────────────────────
+  async function send() {
+    const textarea = document.getElementById("query");
+    const q = textarea.value.trim();
+    if (!q) return;
+
+    textarea.value = "";
+    document.getElementById("send-btn").disabled = true;
+    addMsg("user", q);
+    setTyping(true);
+
+    try {
+      const resp = await fetch(`${API_BASE}/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q, use_cache: true }),
+      });
+      const data = await resp.json();
+      setTyping(false);
+
+      if (!resp.ok) {
+        addMsg("system", `Error: ${data.detail || resp.statusText}`);
+        return;
+      }
+
+      const meta = `${data.question_type} · ${data.cache_hit ? "cached" : "live"} · ${(data.latency_ms/1000).toFixed(1)}s`;
+      addMsg("system", data.answer, meta, data.sources);
+      updateStats(data);
+    } catch (err) {
+      setTyping(false);
+      addMsg("system", `Network error: ${err.message}. Is the FastAPI server running?\n\nStart it with:\n  uvicorn api:app --reload --port 8000`);
+    } finally {
+      document.getElementById("send-btn").disabled = false;
+      textarea.focus();
+    }
+  }
+
+  function ask(el) { document.getElementById("query").value = el.textContent; send(); }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  checkHealth();
+  setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>

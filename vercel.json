@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "name": "india-steel-trade-intelligence",
+  "builds": [
+    {
+      "src": "api.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "api.py" }
+  ],
+  "env": {
+    "GROQ_API_KEY":        "@groq-api-key",
+    "PINECONE_API_KEY":    "@pinecone-api-key",
+    "PINECONE_INDEX_NAME": "steel-rag"
+  },
+  "regions": ["sin1"],
+  "functions": {
+    "api.py": {
+      "maxDuration": 60,
+      "memory":      512
+    }
+  }
+}
