@@ -1,0 +1,34 @@
+[
+  {
+    "question": "Which countries are subject to anti-dumping investigation on electrogalvanized steel imports into India?",
+    "answer": "India's Directorate General of Trade Remedies (DGTR) conducts anti-dumping investigations under Article 19(3)(a) of the Agreement on Safeguards and related provisions. The DGTR has not specifically investigated electrogalvanized steel imports from any particular country as part of its anti-dumping procedures. However, it is important to note that DGTR investigates antidumping cases based on material injury findings, which can be triggered by various factors including price changes, volume, and market share. Therefore, while there isn't a direct list of countries involved in this case, the DGTR would consider the impact of electrogalvanized steel imports on domestic producers if such an investigation were initiated."
+  },
+  {
+    "question": "What products are covered under the anti-dumping investigation on seamless tubes from China?",
+    "answer": "The anti-dumping investigation on seamless tubes from China is covered by the Product Control Number (PCN) 1573-2018, which specifically targets \"steel tube and pipe\". This number applies to various types of steel tubing including seamless tubes, hence the question pertains to seamless tubes as well. The investigation would likely focus on comparing the price of Chinese seamless tubes against those produced in India to determine if dumping practices are occurring."
+  },
+  {
+    "question": "How many countries are named in the anti-dumping investigation on flat rolled products of stainless steel?",
+    "answer": "The anti-dumping investigation on flat rolled products of stainless steel involves multiple countries. According to the context, this includes China, Japan, South Korea, and Taiwan. The investigation is conducted by the Directorate General of Trade Remedies (DGTR), which is responsible for implementing antidumping duties under India's trade remedies framework."
+  },
+  {
+    "question": "What type of products are covered by the safeguard investigation on steel flat products?",
+    "answer": "The safeguard investigation on steel flat products is applicable to all countries under the Indian Trade Policy Act. This measure aims to protect domestic industries from potential dumping and other unfair practices in international markets. The scope of such investigations typically includes products classified as 'steel flat' based on their structure and composition, as defined by the International Organization for Standardization's Product Control Number system (PCN)."
+  },
+  {
+    "question": "What does PCN stand for and why is it used in anti-dumping investigations?",
+    "answer": "PCN stands for \"Product Control Number.\" It is used in anti-dumping investigations to standardise the way different types of steel products are compared against each other. This ensures consistency across different investigations by providing a unique identifier for each type of steel product, allowing for accurate comparisons based on their characteristics rather than just their name."
+  },
+  {
+    "question": "What is the difference between an anti-dumping measure and a safeguard measure?",
+    "answer": "An anti-dumping duty is imposed when imported goods are sold at less than their normal value in the exporting country, thereby causing injury to domestic producers. It applies to all countries and involves setting up a provisional anti-dumping duty until there's a final ruling on whether dumping actually occurred.\nA safeguard measure, on the other hand, is applied by a country to protect its domestic industry from sudden increases in imports of certain products. It can be used against any country but does not involve anti-dumping duties; instead, it may include countervailing duties or safeguard provisions as part of the investigation process."
+  },
+  {
+    "question": "What is the IS 2062 standard and which steel products does it apply to?",
+    "answer": "IS 2062 is an international standard published by the Bureau of Indian Standards (BIS). It applies specifically to structural steel products, including hot-rolled sections, cold-formed sections, plate, bars, tubes, wire rods, and other similar products used in construction projects. This standard provides uniformity in the classification and description of these steel products across different markets and jurisdictions, facilitating more accurate trade remedies like anti-dumping duties and safeguard measures."
+  },
+  {
+    "question": "What triggers the initiation of a safeguard investigation in India?",
+    "answer": "In India, safeguard investigations into imports of certain products, including structural steel, are initiated when there is evidence of substantial injury or damage to domestic industries caused by such imports. This can be triggered by either an anti-dumping duty investigation or a countervailing duty investigation where the domestic industry has been found to have suffered material injury due to dumped or subsidized imports. The trigger for these investigations involves the imposition of antidumping duties and/or countervailing duties on imported goods from a country other than India."
+  }
+]

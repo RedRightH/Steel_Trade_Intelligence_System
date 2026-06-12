@@ -146,17 +146,74 @@ The 4× latency increase is driven primarily by Pinecone network round-trips + B
 
 ---
 
-## What Remains (Plan Weeks 3–4)
+## DPO Fine-tuning Results (Week 3 Gate)
 
-| Item | Status | Notes |
-|------|--------|-------|
-| DPO fine-tuning (Qwen2.5-1.5B) | Not started | 80 preference pairs needed |
-| vLLM serving + AWQ quantisation | Not started | Colab T4 required |
-| Multimodal (Qwen2-VL) | Not started | 3 image test cases |
-| Semantic caching (GPTCache) | Not started | Expected 20–35% hit rate |
-| Vercel frontend + FastAPI backend | Not started | Streamlit Cloud live instead |
-| Policy brief (1,500 words) | ✅ Written | See policy_brief.md |
+**Model:** Qwen2.5-1.5B-Instruct (4-bit NF4, LoRA r=16/α=32, q/k/v/o_proj)  
+**Hardware:** NVIDIA GeForce RTX 4090 Laptop GPU (16 GB VRAM)  
+**Dataset:** 70 preference pairs across 6 domains (ANTI_DUMPING ×20, SAFEGUARD ×10, RAW_MATERIAL ×10, POLICY_OPPORTUNITY ×10, CBAM_COMPLIANCE ×10, DATA_ANALYSIS ×10)  
+**Training time:** 3 min 17 sec (3 epochs, 21 steps) — 40× faster than Colab T4 estimate
+
+### Training metrics
+
+| Step | Train loss | Reward accuracy | Reward margin |
+|------|-----------|----------------|---------------|
+| Epoch 0.7 | 0.630 | 55% | 0.15 |
+| Epoch 1.4 | 0.321 | **100%** | 1.10 |
+| Epoch 2.1 | 0.124 | 100% | 2.32 |
+| Epoch 3.0 | 0.084 | 100% | **2.65** |
+
+Final eval loss: **0.100** | eval reward accuracy: **100%** | eval reward margin: **2.53**
+
+Reward accuracy reaching 100% from epoch 1.4 onward confirms the model learned to consistently rank chosen > rejected responses. The loss curve shows no overfitting (eval loss tracked train loss cleanly).
+
+### Faithfulness gate test
+
+| Model | Avg NLI faithfulness | Delta vs Groq | Gate (≥ Groq − 0.05) |
+|-------|---------------------|--------------|----------------------|
+| Groq LLaMA-3.3-70b (v3 RAG) | 1.000 | — | baseline |
+| Qwen2.5-1.5B DPO | **0.938** | −0.062 | ❌ below threshold |
+
+**Decision: Keep Groq LLaMA-3.3-70b in production.** This is the expected outcome for a 70-pair dataset — the plan explicitly notes: *"A null result (keep Groq) is a valid documented finding."* The DPO training successfully demonstrated preference optimisation (reward accuracy 100%, margin 2.65) even if the small model cannot match the 70B production model's faithfulness.
+
+**DPO checkpoint:** `dpo/dpo_checkpoint/` (LoRA adapter weights, ~17MB)
 
 ---
 
-*Benchmark report generated June 2026 | Suchit Paul Santosh | India Steel Trade Intelligence Platform*
+## Guardrails (Week 1 Day 5 Gate — completed retroactively)
+
+**Module:** `steel_rag/guardrails.py`  
+**Functions:** `is_in_domain(question)` + `is_answer_grounded(answer, context_chunks)`
+
+### Red-team test results
+
+| Category | Questions | Result |
+|----------|-----------|--------|
+| Out-of-domain (must reject) | 10 | **10/10 correctly rejected** |
+| In-domain (must accept) | 10 | **10/10 correctly accepted** |
+| **Total** | **20** | **20/20 (100%)** |
+| False positives (OOD accepted) | — | **0** |
+| False negatives (in-domain rejected) | — | **0** |
+
+**Gate: PASS** (target: 0 false positives, 0 false negatives)
+
+---
+
+## Completed Status (all plan items)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| DPO fine-tuning (Qwen2.5-1.5B) | ✅ Complete | 3m17s on RTX 4090; checkpoint at dpo/dpo_checkpoint/ |
+| DPO gate test | ✅ Documented | NLI 0.938 vs Groq 1.000; keep Groq in production |
+| Guardrails (is_in_domain + red-team) | ✅ Complete | 20/20 gate pass |
+| vLLM serving setup | ✅ Written | vllm/setup_vllm_colab.py; run locally or on Colab |
+| Multimodal (Qwen2-VL) | ✅ Written | multimodal/qwen_vl_extract.py; 3 test cases defined |
+| Semantic caching | ✅ Built | steel_rag/semantic_cache.py; cosine ≥ 0.92, 24h TTL |
+| FastAPI backend | ✅ Live | api.py; 7 routes; /health verified |
+| Vercel deployment config | ✅ Written | vercel.json; deploy to Vercel (static) + Render (API) |
+| Minimal frontend | ✅ Written | frontend/index.html; dark-theme chat UI |
+| Policy brief (1,500 words) | ✅ Written | See policy_brief.md |
+| RAG warm-up (cold-start fix) | ✅ Built | rag.warmup() + Streamlit + FastAPI startup hooks |
+
+---
+
+*Benchmark report updated June 2026 | Suchit Paul Santosh | India Steel Trade Intelligence Platform*
