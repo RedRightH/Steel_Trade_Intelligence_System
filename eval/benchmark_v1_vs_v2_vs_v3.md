@@ -162,10 +162,27 @@ boosted / at-risk markets. Full ranking: `eval/market_opportunities.json`.
 
 ### GPR-conditioned forecast
 
-`forecast_price(df, gpr_df=load_steel_gpr_index())` adds the Steel-GPR daily index as a
-Prophet external regressor (baseline 100 on days without scored articles; future days hold
-the recent 5-day mean). Active in `get_futures_snapshot()` → dashboard. With only days of
-index history the regressor beta is noisy; it sharpens as the RSS daemon accumulates data.
+`forecast_price(df, gpr_df=get_gpr_series())` adds the Steel-GPR index as a Prophet
+external regressor. The series merges a historical event-based index (10 documented
+events, decay half-life 3 sessions, built by `eval/backtest_futures.py`) with the live
+RSS-scored index — 503 sessions of regressor history. Future days decay toward
+baseline 100 (no look-ahead).
+
+### Forecast backtest (`eval/backtest_futures.py`)
+
+Walk-forward validation on HRC=F: 9 cutoffs, 30-session horizon, 250-session
+minimum training window.
+
+| Config | MAE $ | MAPE % | Direction | Notes |
+|--------|-------|--------|-----------|-------|
+| Old production (yearly + multiplicative, cp=0.05) | 82.2 | 8.87 | 4/9 = 44% | overfit yearly cycle on 2y data |
+| Old + event-GPR regressor | 84.5 | 9.11 | 4/9 = 44% | regressor alone can't fix seasonality |
+| **New production (no yearly, additive, cp=0.1, + GPR)** | **29.1** | **3.28** | **6/9 = 67%** | 2.7× error reduction |
+
+**Key finding:** the original config fitted a yearly seasonality term on only 2 years of
+data — the model memorised one cycle and extrapolated it, producing sub-coin-flip
+directional accuracy. Removing the yearly term and switching to additive seasonality cut
+MAPE from 8.9% to 3.3%. The production `forecast_price()` now uses the validated config.
 
 ---
 

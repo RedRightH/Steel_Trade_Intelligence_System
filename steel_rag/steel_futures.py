@@ -219,12 +219,17 @@ def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS,
         gpr_future_level = float(g["gpr"].tail(5).mean())
         gpr_used = True
 
+    # Config selected by walk-forward backtest (eval/backtest_futures.py):
+    # no yearly term (2y of history is too short to learn a stable yearly
+    # cycle), additive seasonality, changepoint_prior=0.1.
+    # Backtest: MAPE 3.28% / 67% direction vs 8.87% / 44% for the old
+    # multiplicative+yearly config (9 folds, 30-session horizon).
     model = Prophet(
         daily_seasonality=False,
         weekly_seasonality=True,
-        yearly_seasonality=True,
-        changepoint_prior_scale=0.05,
-        seasonality_mode="multiplicative",
+        yearly_seasonality=False,
+        changepoint_prior_scale=0.1,
+        seasonality_mode="additive",
         interval_width=0.80,
     )
     if gpr_used:
@@ -239,9 +244,17 @@ def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS,
 
     future = model.make_future_dataframe(periods=days, freq="B")  # business days
     if gpr_used:
-        # Historical days: actual index (baseline-filled); future days: hold recent level
+        # Historical days: actual index (baseline-filled). Future days: decay
+        # from the recent level toward baseline 100 (half-life 3 sessions) —
+        # matches the no-look-ahead design validated in the backtest.
+        import math as _math
         hist_gpr = prophet_df.set_index("ds")["gpr"]
-        future["gpr"] = future["ds"].map(hist_gpr).fillna(gpr_future_level)
+        lam = _math.log(2) / 3.0
+        future["gpr"] = future["ds"].map(hist_gpr)
+        n_future = int(future["gpr"].isna().sum())
+        decayed = [100.0 + (gpr_future_level - 100.0) * _math.exp(-lam * (k + 1))
+                   for k in range(n_future)]
+        future.loc[future["gpr"].isna(), "gpr"] = decayed
     forecast = model.predict(future)
 
     current     = float(close.iloc[-1])
@@ -661,6 +674,34 @@ def load_steel_gpr_index() -> "pd.DataFrame":
     return df
 
 
+EVENT_GPR_HISTORY_PATH = CACHE_DIR / "event_gpr_history.json"
+
+
+def get_gpr_series() -> "pd.DataFrame":
+    """
+    Full Steel-GPR series for the Prophet regressor:
+    historical event-based index (built by eval/backtest_futures.py from
+    documented trade events) merged with the live RSS-scored index.
+    Live values win on overlapping dates.
+    """
+    import pandas as pd
+    frames = []
+    if EVENT_GPR_HISTORY_PATH.exists():
+        try:
+            h = pd.read_json(EVENT_GPR_HISTORY_PATH)
+            h["date"] = pd.to_datetime(h["date"])
+            frames.append(h[["date", "steel_gpr_index"]])
+        except Exception:
+            pass
+    live = load_steel_gpr_index()
+    if not live.empty:
+        frames.append(live[["date", "steel_gpr_index"]])
+    if not frames:
+        return pd.DataFrame()
+    df = pd.concat(frames).drop_duplicates(subset="date", keep="last")
+    return df.sort_values("date").reset_index(drop=True)
+
+
 # ── Snapshot for dashboard ────────────────────────────────────────────────────
 
 def get_futures_snapshot() -> dict:
@@ -701,7 +742,7 @@ def get_futures_snapshot() -> dict:
     if "HRC=F" in data and not data["HRC=F"].empty:
         try:
             df_hrc = compute_technicals(data["HRC=F"])
-            gpr_df = load_steel_gpr_index()
+            gpr_df = get_gpr_series()
             hrc_forecast = forecast_price(df_hrc, days=FORECAST_DAYS, gpr_df=gpr_df)
         except Exception as e:
             print(f"[WARN] HRC forecast failed: {e}")
