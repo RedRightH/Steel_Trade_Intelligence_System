@@ -1,0 +1,89 @@
+{
+  "accuracy": 1.0,
+  "correct": 10,
+  "total": 10,
+  "gate_pass": true,
+  "gate_threshold": 0.8,
+  "questions": [
+    {
+      "question": "What anti-dumping duty has India imposed on seamless steel tubes from China?",
+      "expected": "ANTI_DUMPING",
+      "predicted": "ANTI_DUMPING",
+      "confidence": 0.9,
+      "correct": true,
+      "latency_ms": 1262
+    },
+    {
+      "question": "What is the dumping margin for hot-rolled coil imports from Korea under the DGTR investigation?",
+      "expected": "ANTI_DUMPING",
+      "predicted": "ANTI_DUMPING",
+      "confidence": 0.9,
+      "correct": true,
+      "latency_ms": 352
+    },
+    {
+      "question": "Which flat steel products are covered by India's current safeguard duty investigation?",
+      "expected": "SAFEGUARD",
+      "predicted": "SAFEGUARD",
+      "confidence": 0.9,
+      "correct": true,
+      "latency_ms": 244
+    },
+    {
+      "question": "How does the India-UAE CEPA benefit Indian steel exporters?",
+      "expected": "POLICY_OPPORTUNITY",
+      "predicted": "POLICY_OPPORTUNITY",
+      "confidence": 0.9,
+      "correct": true,
+      "latency_ms": 320
+    },
+    {
+      "question": "What is the impact of Australian port disruptions on India's coking coal imports?",
+      "expected": "RAW_MATERIAL",
+      "predicted": "RAW_MATERIAL",
+      "confidence": 0.9,
+      "correct": true,
+      "latency_ms": 279
+    },
+    {
+      "question": "How dependent is India's steel sector on imported iron ore?",
+      "expected": "RAW_MATERIAL",
+      "predicted": "RAW_MATERIAL",
+      "confidence": 0.9,
+      "correct": true,
+      "latency_ms": 589
+    },
+    {
+      "question": "What are the EU CBAM carbon border reporting obligations for Indian steel exporters?",
+      "expected": "CBAM_COMPLIANCE",
+      "predicted": "CBAM_COMPLIANCE",
+      "confidence": 0.9,
+      "correct": true,
+      "latency_ms": 229
+    },
+    {
+      "question": "Which 5 countries receive the most Indian steel exports by value in the last 6 months?",
+      "expected": "DATA_ANALYSIS",
+      "predicted": "DATA_ANALYSIS",
+      "confidence": 0.9,
+      "correct": true,
+      "latency_ms": 302
+    },
+    {
+      "question": "What is the year-on-year growth trend for India's flat steel exports to Vietnam?",
+      "expected": "DATA_ANALYSIS",
+      "predicted": "DATA_ANALYSIS",
+      "confidence": 0.9,
+      "correct": true,
+      "latency_ms": 362
+    },
+    {
+      "question": "What is India's MFN tariff rate on hot-rolled steel coils HS 7208 and how has it changed since 2015?",
+      "expected": "TARIFF_ANALYSIS",
+      "predicted": "TARIFF_ANALYSIS",
+      "confidence": 0.9,
+      "correct": true,
+      "latency_ms": 316
+    }
+  ]
+}

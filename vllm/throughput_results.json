@@ -1,0 +1,14 @@
+{
+  "local_dpo": {
+    "error": "No module named 'peft'"
+  },
+  "groq_baseline": {
+    "model": "llama-3.3-70b-versatile (Groq API)",
+    "n_queries": 5,
+    "avg_latency_s": 0.562,
+    "avg_latency_ms": 561.8,
+    "total_tokens": 374,
+    "total_time_s": 2.81,
+    "throughput_tps": 133.1
+  }
+}

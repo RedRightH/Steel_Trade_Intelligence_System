@@ -1,0 +1,165 @@
+{
+  "gate_pass": true,
+  "passed": 5,
+  "total": 5,
+  "events": [
+    {
+      "event_id": 1,
+      "event_name": "India AD on Chinese HR coil",
+      "question": "India has imposed a 12% anti-dumping duty on hot-rolled steel coils imported from China. What is the policy rationale and trade impact?",
+      "expected_agent": "PolicyAnalystAgent",
+      "actual_agent": "PolicyAnalystAgent",
+      "expected_qtype": [
+        "ANTI_DUMPING"
+      ],
+      "actual_qtype": "ANTI_DUMPING",
+      "agent_ok": true,
+      "qtype_ok": true,
+      "struct_ok": true,
+      "struct_issues": [],
+      "structured_fields": {
+        "duty_type": "Anti-Dumping Duty",
+        "product": "hot-rolled steel coils",
+        "countries": [
+          "China"
+        ],
+        "duty_rate": "Not specified",
+        "source_docs": [
+          "NCV FINAL SGD Steel 16.08.2025.pdf",
+          "FF-NCV.pdf"
+        ],
+        "confidence": 0.5,
+        "gravity_scenario": null
+      },
+      "latency_ms": 71028,
+      "pass": true
+    },
+    {
+      "event_id": 2,
+      "event_name": "Australian port strike \u2014 coking coal delay",
+      "question": "A major port strike in Australia is delaying coking coal cargo shipments to India. What is the supply chain risk for Indian steel producers?",
+      "expected_agent": "SupplyChainRiskAgent",
+      "actual_agent": "SupplyChainRiskAgent",
+      "expected_qtype": [
+        "RAW_MATERIAL"
+      ],
+      "actual_qtype": "RAW_MATERIAL",
+      "agent_ok": true,
+      "qtype_ok": true,
+      "struct_ok": true,
+      "struct_issues": [],
+      "structured_fields": {
+        "risk_type": "RAW_MATERIAL",
+        "commodity": "coking coal",
+        "risk_level": "HIGH",
+        "key_facts": [
+          "India is heavily dependent on imported coking coal, primarily from Australia",
+          "Domestic coking coal production has high ash content, making it unsuitable for steel production"
+        ],
+        "recommended_action": "Indian steel industry should diversify its coking coal imports to reduce dependence on Australia and mitigate potential supply chain disruptions",
+        "source_docs": [
+          "Final Annual Report 2025-26",
+          "Steel_English_AR_2024",
+          "MoS AR 2022-23"
+        ]
+      },
+      "latency_ms": 4031,
+      "pass": true
+    },
+    {
+      "event_id": 3,
+      "event_name": "India-UAE CEPA steel concessions",
+      "question": "India-UAE Comprehensive Economic Partnership Agreement CEPA steel concessions have taken effect. Which Indian steel products benefit and what is the export impact?",
+      "expected_agent": "PolicyAnalystAgent",
+      "actual_agent": "PolicyAnalystAgent",
+      "expected_qtype": [
+        "POLICY_OPPORTUNITY",
+        "ANTI_DUMPING",
+        "SAFEGUARD"
+      ],
+      "actual_qtype": "POLICY_OPPORTUNITY",
+      "agent_ok": true,
+      "qtype_ok": true,
+      "struct_ok": true,
+      "struct_issues": [],
+      "structured_fields": {
+        "duty_type": "FTA Benefit",
+        "product": "flat steel products",
+        "countries": [
+          "India",
+          "UAE"
+        ],
+        "duty_rate": "Not specified",
+        "source_docs": [
+          "NCV FINAL SGD Steel 16.08.2025.pdf",
+          "FTP2023_Chapter01.pdf"
+        ],
+        "confidence": 0.5,
+        "gravity_scenario": null
+      },
+      "latency_ms": 3556,
+      "pass": true
+    },
+    {
+      "event_id": 4,
+      "event_name": "China restricts scrap steel exports",
+      "question": "China has announced restrictions on scrap steel exports. What is the impact on India's raw material supply chain and steel prices?",
+      "expected_agent": "SupplyChainRiskAgent",
+      "actual_agent": "SupplyChainRiskAgent",
+      "expected_qtype": [
+        "RAW_MATERIAL"
+      ],
+      "actual_qtype": "RAW_MATERIAL",
+      "agent_ok": true,
+      "qtype_ok": true,
+      "struct_ok": true,
+      "struct_issues": [],
+      "structured_fields": {
+        "risk_type": "RAW_MATERIAL",
+        "commodity": "scrap",
+        "risk_level": "HIGH",
+        "key_facts": [
+          "China's restrictions on scrap steel exports may lead to a shortage of raw materials for India's steel industry",
+          "India relies heavily on imports to meet its steel production targets"
+        ],
+        "recommended_action": "The Indian steel industry should diversify its raw material sources to mitigate the risk of supply chain disruption and cost increases",
+        "source_docs": [
+          "NCV FINAL SGD Steel 16.08.2025.pdf"
+        ]
+      },
+      "latency_ms": 3056,
+      "pass": true
+    },
+    {
+      "event_id": 5,
+      "event_name": "EU CBAM reporting for Indian steel firms",
+      "question": "EU Carbon Border Adjustment Mechanism CBAM mandatory reporting has begun for Indian steel exporters. What compliance obligations apply and which grades are affected?",
+      "expected_agent": "SupplyChainRiskAgent",
+      "actual_agent": "SupplyChainRiskAgent",
+      "expected_qtype": [
+        "CBAM_COMPLIANCE"
+      ],
+      "actual_qtype": "CBAM_COMPLIANCE",
+      "agent_ok": true,
+      "qtype_ok": true,
+      "struct_ok": true,
+      "struct_issues": [],
+      "structured_fields": {
+        "risk_type": "CBAM_COMPLIANCE",
+        "commodity": "steel products",
+        "risk_level": "MEDIUM",
+        "key_facts": [
+          "Indian steel exporters must report carbon emissions for certain steel products under CBAM",
+          "Compliance obligations include providing detailed information on greenhouse gas emissions and paying a carbon levy if emissions exceed a certain threshold"
+        ],
+        "recommended_action": "Indian steel exporters should adapt to the new reporting and payment obligations to maintain access to the EU market",
+        "source_docs": [
+          "Steel_English_AR_2024 (1).pdf",
+          "Annual Report 2023-24 Final_0.pdf"
+        ]
+      },
+      "latency_ms": 11469,
+      "pass": true
+    }
+  ]
+}

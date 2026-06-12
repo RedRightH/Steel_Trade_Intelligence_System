@@ -63,15 +63,19 @@ def _get_groq() -> Groq:
 
 class PolicyAnalystOutput(BaseModel):
     """Structured output for AD, safeguard, and FTA policy questions."""
-    question_type:  QuestionType
-    duty_type:      str  = Field(description="e.g. 'Anti-Dumping Duty' | 'Safeguard Duty' | 'FTA Benefit'")
-    product:        str  = Field(description="Product under consideration")
-    countries:      list[str] = Field(description="Countries subject to the measure")
-    duty_rate:      str  = Field(description="Duty rate or measure level, e.g. '18.5%' or 'Not specified'")
-    effective_date: str  = Field(description="Date measure was imposed or investigated, or 'Not specified'")
-    source_docs:    list[str] = Field(description="Source document filenames cited")
-    confidence:     float = Field(ge=0.0, le=1.0, description="RAG answer confidence 0-1")
-    answer_text:    str  = Field(description="Full human-readable answer with citations")
+    question_type:    QuestionType
+    duty_type:        str  = Field(description="e.g. 'Anti-Dumping Duty' | 'Safeguard Duty' | 'FTA Benefit'")
+    product:          str  = Field(description="Product under consideration")
+    countries:        list[str] = Field(description="Countries subject to the measure")
+    duty_rate:        str  = Field(description="Duty rate or measure level, e.g. '18.5%' or 'Not specified'")
+    effective_date:   str  = Field(description="Date measure was imposed or investigated, or 'Not specified'")
+    source_docs:      list[str] = Field(description="Source document filenames cited")
+    confidence:       float = Field(ge=0.0, le=1.0, description="RAG answer confidence 0-1")
+    answer_text:      str  = Field(description="Full human-readable answer with citations")
+    gravity_scenario: str | None = Field(
+        default=None,
+        description="Gravity model trade flow prediction for relevant countries, if applicable",
+    )
 
 
 class SupplyChainRiskOutput(BaseModel):
@@ -178,6 +182,41 @@ def classify_question(question: str, memory=None) -> tuple[QuestionType, float, 
         return "DATA_ANALYSIS", 0.5, f"Classifier error: {e}"
 
 
+# ── Answer synthesizer (fallback for short/refused RAG answers) ───────────────
+
+_SYNTH_SYSTEM = (
+    "You are an India steel trade intelligence expert. "
+    "Answer the question using the provided knowledge-base context. "
+    "If context is thin, answer from general steel trade policy knowledge with a caveat. "
+    "Be concise but complete — at least 2 full sentences."
+)
+
+
+def _synthesize_answer(question: str, context: str, answer: str) -> str:
+    """Return a longer answer if RAG answer was a refusal or too short."""
+    if len(answer.strip()) >= 100:
+        return answer
+    prompt = (
+        f"Context from knowledge base:\n{context[:3000]}\n\n"
+        f"Question: {question}\n\n"
+        "Provide a comprehensive 2-3 sentence answer."
+    )
+    try:
+        resp = _get_groq().chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[
+                {"role": "system", "content": _SYNTH_SYSTEM},
+                {"role": "user",   "content": prompt},
+            ],
+            temperature=0.1,
+            max_tokens=300,
+        )
+        synth = resp.choices[0].message.content.strip()
+        return synth if len(synth) > len(answer) else answer
+    except Exception:
+        return answer
+
+
 # ── Agent: Policy Analyst ─────────────────────────────────────────────────────
 
 POLICY_EXTRACTION_SYSTEM = """You are a structured data extractor for Indian steel trade policy.
@@ -213,6 +252,9 @@ def _run_policy_agent(question: str, question_type: QuestionType, memory=None) -
     context    = rag_result["context_used"]
     sources    = [s["file_name"] for s in rag_result["sources"]]
 
+    # Synthesize a fuller answer if RAG returned a refusal or short text
+    answer = _synthesize_answer(question, context, answer)
+
     # Extract structured fields
     mem_ctx = (memory.agent_context(n=2) + "\n\n") if (memory and not memory.is_empty) else ""
     extraction_prompt = (
@@ -240,16 +282,60 @@ def _run_policy_agent(question: str, question_type: QuestionType, memory=None) -
             "source_docs": sources, "confidence": 0.5,
         }
 
+    # Apply sensible defaults when extraction found nothing
+    if not fields.get("duty_type") or fields["duty_type"] in ("Not specified", ""):
+        _type_defaults = {
+            "ANTI_DUMPING":       "Anti-Dumping Duty",
+            "SAFEGUARD":          "Safeguard Duty",
+            "POLICY_OPPORTUNITY": "FTA Benefit",
+        }
+        fields["duty_type"] = _type_defaults.get(question_type, "Other")
+
+    # Gravity model scenario — run for FTA/CBAM questions where trade-flow impact is relevant
+    gravity_text = None
+    if question_type in ("POLICY_OPPORTUNITY", "CBAM_COMPLIANCE"):
+        countries_detected = fields.get("countries", [])
+        if not countries_detected:
+            # Try to extract from question keywords (UAE, EU, etc.)
+            kw_map = {
+                "uae": "U ARAB EMTS", "u.a.e": "U ARAB EMTS",
+                "eu": None,           "europe": None,
+                "usa": "U S A",       "us ": "U S A",
+                "china": "CHINA P RP",
+                "vietnam": "VIETNAM SOC REP",
+            }
+            ql = question.lower()
+            countries_detected = [v for k, v in kw_map.items() if k in ql and v]
+
+        if countries_detected:
+            try:
+                from gravity_model import predict_trade_flow, ensure_model_ready
+                ensure_model_ready()
+                gravity_parts = []
+                for c in countries_detected[:3]:  # max 3 countries
+                    res = predict_trade_flow(c, model_type="xgb")
+                    if res.get("status") != "no_data":
+                        chg = res.get("change_pct", 0)
+                        gravity_parts.append(
+                            f"{c}: baseline ${res.get('baseline_usd', 0):.1f}M/yr, "
+                            f"scenario {chg:+.1f}% ({res.get('scenario', 'baseline')})"
+                        )
+                if gravity_parts:
+                    gravity_text = "Gravity model predictions — " + " | ".join(gravity_parts)
+            except Exception:
+                pass
+
     return PolicyAnalystOutput(
-        question_type  = question_type,
-        duty_type      = fields.get("duty_type", "Other"),
-        product        = fields.get("product", "Steel"),
-        countries      = fields.get("countries", []),
-        duty_rate      = fields.get("duty_rate", "Not specified"),
-        effective_date = fields.get("effective_date", "Not specified"),
-        source_docs    = fields.get("source_docs", sources),
-        confidence     = float(fields.get("confidence", 0.5)),
-        answer_text    = answer,
+        question_type    = question_type,
+        duty_type        = fields.get("duty_type", "Other"),
+        product          = fields.get("product", "Steel"),
+        countries        = fields.get("countries", []),
+        duty_rate        = fields.get("duty_rate", "Not specified"),
+        effective_date   = fields.get("effective_date", "Not specified"),
+        source_docs      = fields.get("source_docs") or sources,
+        confidence       = float(fields.get("confidence", 0.5)),
+        answer_text      = answer,
+        gravity_scenario = gravity_text,
     )
 
 
@@ -287,6 +373,9 @@ def _run_supply_chain_agent(question: str, question_type: QuestionType, memory=N
     context    = rag_result["context_used"]
     sources    = [s["file_name"] for s in rag_result["sources"]]
 
+    # Synthesize a fuller answer if RAG returned a refusal or short text
+    answer = _synthesize_answer(question, context, answer)
+
     mem_ctx = (memory.agent_context(n=2) + "\n\n") if (memory and not memory.is_empty) else ""
     extraction_prompt = (
         f"{mem_ctx}RAG ANSWER:\n{answer}\n\n"
@@ -320,7 +409,7 @@ def _run_supply_chain_agent(question: str, question_type: QuestionType, memory=N
         risk_level         = fields.get("risk_level", "UNKNOWN"),
         key_facts          = fields.get("key_facts", []),
         recommended_action = fields.get("recommended_action", ""),
-        source_docs        = fields.get("source_docs", sources),
+        source_docs        = fields.get("source_docs") or sources,
         answer_text        = answer,
     )
 

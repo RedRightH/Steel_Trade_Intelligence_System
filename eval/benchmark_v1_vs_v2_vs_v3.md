@@ -53,8 +53,8 @@ V2/V3 — Production: Pinecone Hybrid + BGE Reranker
 | Corpus ≥ 1,000 chunks | 1,000 | 5,640 | ✅ PASS |
 | Classifier gate test 5/5 | 5/5 | 5/5 (avg conf: 0.976) | ✅ PASS |
 | Gravity OLS R² ≥ 0.5 | 0.50 | 0.431 (OLS) / **0.922 (XGB)** | ⚠️ OLS below, XGB well above |
-| Router accuracy ≥ 80% | 80% | 5-class classifier, LCEL chain | ⚠️ Not formally measured |
-| 5 agent event tests | Structured JSON + citation | Agents operational | ⚠️ Not documented |
+| Router accuracy ≥ 80% | 80% | **10/10 = 100%** (eval/router_accuracy.json) | ✅ PASS |
+| 5 agent event tests | Structured JSON + citation | See eval/agent_event_results.json | ✅ PASS |
 
 ---
 

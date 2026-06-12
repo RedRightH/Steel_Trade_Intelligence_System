@@ -111,12 +111,13 @@ def _warmup_rag():
 _warmup_rag()
 
 # ── tabs ──────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🔍 Intelligence Query",
     "🔄 Trade Flows",
     "📊 Tariff Lookup",
     "🧪 Eval Report",
     "📈 Futures & Impact",
+    "🌐 Gravity Scenarios",
 ])
 
 
@@ -1244,3 +1245,123 @@ with tab5:
                     st.warning(f"Could not render Steel-GPR chart: {e}")
             else:
                 st.info("Steel-GPR index not yet built. Run the pipeline to generate it.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TAB 6 — Gravity Model Trade Flow Scenarios
+# ═══════════════════════════════════════════════════════════════════════════════
+
+with tab6:
+    st.subheader("🌐 Gravity Model — Trade Flow Scenario Analysis")
+    st.caption(
+        "Predicts how India's bilateral steel exports change under GDP and tariff scenarios. "
+        "Model: OLS (interpretable) + XGBoost (R²=0.922). Features: ln(GDP), ln(distance), "
+        "RTA dummy, language, contiguity, FE year."
+    )
+
+    @st.cache_resource(show_spinner="Loading gravity model (~5s)…")
+    def _load_gravity():
+        import sys as _sys
+        _sys.path.insert(0, str(ROOT / "steel_rag"))
+        from gravity_model import ensure_model_ready
+        return ensure_model_ready()
+
+    try:
+        grav_mdl = _load_gravity()
+        grav_countries = sorted(grav_mdl["df"]["country"].unique().tolist())
+
+        col_g1, col_g2 = st.columns([2, 1])
+
+        with col_g1:
+            selected_country = st.selectbox(
+                "Partner country", grav_countries,
+                index=grav_countries.index("U ARAB EMTS") if "U ARAB EMTS" in grav_countries else 0,
+                key="grav_country",
+            )
+
+        with col_g2:
+            grav_model_type = st.radio("Model", ["xgb", "ols"], index=0, key="grav_model",
+                                       help="XGBoost (R²=0.922) or OLS (R²=0.431, interpretable)")
+
+        col_s1, col_s2 = st.columns(2)
+        with col_s1:
+            gdp_growth = st.slider(
+                "Partner GDP growth (%)", -10.0, 15.0, 5.0, 0.5, key="grav_gdp",
+                help="Simulates change in partner country's GDP vs latest year",
+            )
+        with col_s2:
+            tariff_change = st.slider(
+                "Tariff change (pp)", -20.0, 20.0, 0.0, 0.5, key="grav_tariff",
+                help="Change in effective tariff rate (negative = tariff cut = more exports)",
+            )
+
+        if st.button("Run scenario", key="grav_run"):
+            with st.spinner("Computing gravity scenario…"):
+                import sys as _sys2
+                _sys2.path.insert(0, str(ROOT / "steel_rag"))
+                from gravity_model import predict_trade_flow
+                res = predict_trade_flow(
+                    selected_country,
+                    gdp_growth_pct=gdp_growth,
+                    tariff_change_pct=tariff_change,
+                    model_type=grav_model_type,
+                )
+
+            if res.get("status") == "no_data":
+                st.warning(res.get("message", "No data for this country."))
+            else:
+                change_pct = res.get("change_pct", 0)
+                baseline   = res.get("baseline_usd", 0)
+                scenario   = res.get("scenario_usd", baseline)
+
+                mc1, mc2, mc3 = st.columns(3)
+                mc1.metric("Baseline exports",  f"${baseline:,.1f}M / yr")
+                mc2.metric("Scenario exports",  f"${scenario:,.1f}M / yr",
+                           delta=f"{change_pct:+.1f}%",
+                           delta_color="normal")
+                mc3.metric("Change",            f"{change_pct:+.1f}%",
+                           delta_color="normal")
+
+                st.info(res.get("explanation", ""))
+
+                with st.expander("Model details"):
+                    st.json({k: v for k, v in res.items()
+                             if k not in ("explanation",)})
+
+        # ── Baseline top-10 export partners ─────────────────────────────────────
+        st.divider()
+        st.subheader("Baseline export volumes — top countries")
+        df_grav = grav_mdl["df"]
+        latest_fy = df_grav["fy_start"].max()
+        top_partners = (
+            df_grav[df_grav["fy_start"] == latest_fy]
+            .nlargest(12, "exports_usd_mn")
+            [["country", "exports_usd_mn", "ln_gdp_partner", "ln_distance"]]
+            .rename(columns={
+                "country": "Country",
+                "exports_usd_mn": "Exports (USD Mn)",
+                "ln_gdp_partner": "ln(GDP partner)",
+                "ln_distance": "ln(Distance km)",
+            })
+            .reset_index(drop=True)
+        )
+        top_partners["Exports (USD Mn)"] = top_partners["Exports (USD Mn)"].round(1)
+        top_partners["ln(GDP partner)"]  = top_partners["ln(GDP partner)"].round(2)
+        top_partners["ln(Distance km)"]  = top_partners["ln(Distance km)"].round(2)
+        st.dataframe(top_partners, use_container_width=True)
+
+        # ── Model performance summary ────────────────────────────────────────────
+        st.divider()
+        perf_col1, perf_col2, perf_col3, perf_col4 = st.columns(4)
+        perf_col1.metric("OLS R²",   "0.431")
+        perf_col2.metric("XGB R²",   "0.922")
+        perf_col3.metric("OLS MAE",  "1.37 ln-units")
+        perf_col4.metric("XGB MAE",  "0.49 ln-units")
+        st.caption(
+            "OLS used for coefficient interpretability (ln(GDP) elasticity ~0.82). "
+            "XGBoost used for scenario predictions. "
+            "Top feature: ln(GDP_partner) dominates; ln(distance) negative as expected."
+        )
+
+    except Exception as _ge:
+        st.error(f"Gravity model unavailable: {_ge}")
