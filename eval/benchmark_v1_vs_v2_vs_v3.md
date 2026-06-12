@@ -134,22 +134,27 @@ News event ──► 3-layer AI-GPR scoring ──► calibrated futures impact 
      └──► spillover countries ──► market opportunity ranker ──► flagged opportunity list
 ```
 
-### Event study calibration (`eval/event_study_calibration.py`)
+### Event study calibration (`eval/event_study_2019.py` — extended to 2019)
 
-10 documented steel trade events (Sep 2024 – Jun 2025) vs actual HRC=F abnormal returns
-(window: close[t−1] → close[t+5], drift-adjusted):
+22 documented steel trade events (May 2019 – Jun 2025: US-China trade war, COVID crash,
+China export rebate removals, Russia-Ukraine war, India export duty, CBAM, Section 232
+cycles) vs actual HRC=F abnormal returns (close[t−1] → close[t+5], drift-adjusted over
+the full 2018–2026 sample):
 
-| Metric | Value |
-|--------|-------|
-| Sign agreement | 6/10 = 60% |
-| Pearson correlation (predicted, actual) | 0.395 |
-| Global calibration factor k | 1.178 |
+| Metric | 10-event study (2024-25) | 22-event study (2019-25) |
+|--------|--------------------------|---------------------------|
+| Sign agreement | 6/10 = 60% | 13/22 = 59% |
+| Pearson correlation | 0.395 | **0.469** |
+| Global factor k | 1.178 | 1.017 |
 
-**Key finding:** the literature-based `TARIFF_INCREASE` multiplier (−0.8, bearish) had the
-**wrong sign for HRC=F** — all three US Section 232/301 tariff events *raised* US domestic
-HRC prices (import protection lifts the domestic benchmark). The per-type calibration ratio
-(−0.355) flips this sign automatically at runtime. Per-type ratios are clipped to [−2.0, 2.5]
-since some come from single events. Calibration file: `steel_rag/futures_cache/impact_calibration.json`.
+**Key findings:**
+- `TARIFF_INCREASE` (n=7) is mechanism-dependent: US import-protection tariffs *raise*
+  HRC=F (domestic benchmark), while demand-side tariffs (US-China goods tariffs) and
+  export duties *lower* it. The median ratio (+0.21) dampens but keeps the bearish sign.
+- `SUPPLY_DISRUPTION` (n=3, incl. Russia-Ukraine and China rebate removal) is the
+  best-calibrated type: ratio 1.02 — the literature multiplier is nearly exact.
+- Per-type ratios still clipped to [−2.0, 2.5] at runtime; n per type is now stored in
+  the calibration file so consumers can weigh reliability.
 
 ### Market opportunity ranker (`steel_rag/market_opportunity.py`)
 
@@ -168,21 +173,32 @@ events, decay half-life 3 sessions, built by `eval/backtest_futures.py`) with th
 RSS-scored index — 503 sessions of regressor history. Future days decay toward
 baseline 100 (no look-ahead).
 
-### Forecast backtest (`eval/backtest_futures.py`)
+### Forecast backtest (`eval/backtest_futures.py` — 7-year window)
 
-Walk-forward validation on HRC=F: 9 cutoffs, 30-session horizon, 250-session
-minimum training window.
+Walk-forward validation on HRC=F 2019–2026: 34 cutoffs, 30-session horizon,
+250-session minimum training window. Covers the US-China trade war, COVID crash,
+2021 supercycle, 2022 collapse, and the 2025 Section 232 escalation.
 
-| Config | MAE $ | MAPE % | Direction | Notes |
-|--------|-------|--------|-----------|-------|
-| Old production (yearly + multiplicative, cp=0.05) | 82.2 | 8.87 | 4/9 = 44% | overfit yearly cycle on 2y data |
-| Old + event-GPR regressor | 84.5 | 9.11 | 4/9 = 44% | regressor alone can't fix seasonality |
-| **New production (no yearly, additive, cp=0.1, + GPR)** | **29.1** | **3.28** | **6/9 = 67%** | 2.7× error reduction |
+| Config | MAE $ | MAPE % | Direction |
+|--------|-------|--------|-----------|
+| **Production (yearly + multiplicative, cp=0.05, + GPR)** | 101.0 | 11.21 | 21/34 = **62%** |
+| Same without GPR regressor | 100.9 | 11.10 | 21/34 = 62% |
+| No-yearly variant (additive, cp=0.1, + GPR) | 129.8 | 13.59 | 16/34 = 47% |
+| Yearly + additive (cp=0.1, + GPR) | 103.1 | 11.41 | 21/34 = 62% |
 
-**Key finding:** the original config fitted a yearly seasonality term on only 2 years of
-data — the model memorised one cycle and extrapolated it, producing sub-coin-flip
-directional accuracy. Removing the yearly term and switching to additive seasonality cut
-MAPE from 8.9% to 3.3%. The production `forecast_price()` now uses the validated config.
+**Key findings:**
+- **The 2-year backtest result did not survive the 7-year re-test.** The no-yearly
+  config that won on 2024–26 data (3.3% MAPE there) degrades to 13.6% MAPE / 47%
+  direction across the full window — config selection on a short window was itself
+  overfitting. The original yearly+multiplicative config is restored in production.
+- The event-GPR regressor is metric-neutral on this horizon (11.21 vs 11.10 MAPE,
+  same direction) — it neither helps nor hurts backtest accuracy. Its value is
+  live news-conditioning of the forecast, and it now trains on 301 elevated
+  sessions from 22 documented events instead of 5 days of RSS data.
+- Honest baseline: ~11% MAPE / 62% directional accuracy on a 30-session horizon is
+  the realistic performance envelope for HRC futures — a volatile, regime-switching
+  series. Folds spanning regime breaks (Jan 2022, Jan 2023, Jan 2024) carry
+  25–35% MAPE regardless of config.
 
 ---
 

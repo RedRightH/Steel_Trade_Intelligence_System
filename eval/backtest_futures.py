@@ -49,14 +49,15 @@ import pandas as pd
 
 HORIZON_BDAYS   = 30
 MIN_TRAIN       = 250    # sessions before first cutoff
-CUTOFF_STEP     = 25     # business days between cutoffs
+CUTOFF_STEP     = 50     # business days between cutoffs (7y window -> ~33 folds)
 DECAY_HALFLIFE  = 3.0    # business days — event risk decays by half every 3 sessions
 EVENT_SCALE     = 100.0  # index points added per unit of risk score on event day
+PRICE_START     = "2018-09-01"
 
 
 def load_prices() -> pd.Series:
-    from steel_futures import fetch_ticker
-    df = fetch_ticker("HRC=F", period="2y")
+    import yfinance as yf
+    df = yf.Ticker("HRC=F").history(start=PRICE_START, auto_adjust=True)
     s = df["Close"].dropna()
     s.index = s.index.tz_localize(None) if s.index.tz else s.index
     return s
@@ -67,9 +68,11 @@ def build_event_gpr_series(dates: pd.DatetimeIndex) -> pd.Series:
     Historical news-risk index over the price calendar:
     baseline 100; each documented event adds risk_score×EVENT_SCALE on its date,
     decaying exponentially (half-life DECAY_HALFLIFE sessions). Events overlap
-    additively.
+    additively. Uses the extended 2019-2025 event list when available.
     """
-    ev_path = ROOT / "eval" / "event_study_results.json"
+    ev_path = ROOT / "eval" / "event_study_results_2019.json"
+    if not ev_path.exists():
+        ev_path = ROOT / "eval" / "event_study_results.json"
     events = json.loads(ev_path.read_text())["events"]
 
     idx = pd.Series(100.0, index=dates)
@@ -103,12 +106,16 @@ def fit_and_forecast(train: pd.Series, horizon_dates: pd.DatetimeIndex,
         m = Prophet(daily_seasonality=False, weekly_seasonality=True,
                     yearly_seasonality=True, changepoint_prior_scale=0.05,
                     seasonality_mode="multiplicative", interval_width=0.80)
+    elif config == "tuned_yearly":
+        m = Prophet(daily_seasonality=False, weekly_seasonality=True,
+                    yearly_seasonality=True, changepoint_prior_scale=0.1,
+                    seasonality_mode="additive", interval_width=0.80)
     else:  # tuned
         m = Prophet(daily_seasonality=False, weekly_seasonality=True,
                     yearly_seasonality=False, changepoint_prior_scale=0.1,
                     seasonality_mode="additive", interval_width=0.80)
 
-    use_gpr = config in ("event_gpr", "tuned") and gpr is not None
+    use_gpr = config in ("event_gpr", "tuned", "tuned_yearly") and gpr is not None
     if use_gpr:
         pdf["gpr"] = gpr.reindex(train.index).fillna(100.0).values
         m.add_regressor("gpr", mode="additive")
@@ -154,7 +161,7 @@ def main():
     cutoff_idxs = list(range(MIN_TRAIN, len(close) - HORIZON_BDAYS, CUTOFF_STEP))
     print(f"Cutoffs: {len(cutoff_idxs)}")
 
-    configs = ["baseline", "event_gpr", "tuned"]
+    configs = ["baseline", "event_gpr", "tuned", "tuned_yearly"]
     per_cfg = {c: {"mae": [], "mape": [], "rmse": [], "dir_ok": []} for c in configs}
     fold_rows = []
 

@@ -219,17 +219,18 @@ def forecast_price(df: "pd.DataFrame", days: int = FORECAST_DAYS,
         gpr_future_level = float(g["gpr"].tail(5).mean())
         gpr_used = True
 
-    # Config selected by walk-forward backtest (eval/backtest_futures.py):
-    # no yearly term (2y of history is too short to learn a stable yearly
-    # cycle), additive seasonality, changepoint_prior=0.1.
-    # Backtest: MAPE 3.28% / 67% direction vs 8.87% / 44% for the old
-    # multiplicative+yearly config (9 folds, 30-session horizon).
+    # Config validated by the 7-year walk-forward backtest
+    # (eval/backtest_futures.py, 34 folds, 2019-2026): yearly+multiplicative
+    # wins at MAPE 11.1% / 62% direction. The no-yearly variant that won the
+    # earlier 2-year backtest degrades to 13.6% / 47% over the full window —
+    # the short-window result was regime-specific. Config selection must be
+    # re-run on the longest available history.
     model = Prophet(
         daily_seasonality=False,
         weekly_seasonality=True,
-        yearly_seasonality=False,
-        changepoint_prior_scale=0.1,
-        seasonality_mode="additive",
+        yearly_seasonality=True,
+        changepoint_prior_scale=0.05,
+        seasonality_mode="multiplicative",
         interval_width=0.80,
     )
     if gpr_used:
