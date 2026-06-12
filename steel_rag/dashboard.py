@@ -238,7 +238,7 @@ with tab1:
 
     # If no chat input but example selected and different from last question
     if not question and prefill:
-        last_q = (st.session_state.chat_history[-1]["content"]
+        last_q = (st.session_state.chat_history[-1].get("content", "")
                   if st.session_state.chat_history else "")
         if prefill != last_q:
             question = prefill
@@ -826,6 +826,7 @@ with tab5:
         import matplotlib.pyplot as plt
         import matplotlib.gridspec as gridspec
         import pandas as pd
+        from steel_futures import FORECAST_DAYS
 
         ticker_opts = {v["name"]: k for k, v in
                        __import__("steel_futures", fromlist=["TICKERS"]).TICKERS.items()
