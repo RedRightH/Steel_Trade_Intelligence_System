@@ -1381,6 +1381,52 @@ with tab6:
                     st.json({k: v for k, v in res.items()
                              if k not in ("explanation",)})
 
+        # ── Multi-market Bull / Base / Bear scenario matrix ─────────────────────
+        st.divider()
+        st.subheader("Bull / Base / Bear — multi-market scenario matrix")
+        st.caption(
+            "Market-specific assumptions: each market uses its own IMF 2026 GDP "
+            "outlook and an FTA-conditioned tariff path, so responses differ by "
+            "market (not a flat uniform shock). Bull = GDP +1.5pp, tariff easing; "
+            "Bear = GDP −3pp, protection (heaviest for protection-prone markets)."
+        )
+        n_markets = st.slider("Markets to show", 5, 25, 12, key="grav_matrix_n")
+        if st.button("Run scenario matrix", key="grav_matrix_run"):
+            with st.spinner("Computing market-specific scenarios…"):
+                from gravity_model import run_scenario_matrix, GDP_OUTLOOK_SOURCE
+                mat = run_scenario_matrix(top_n=n_markets, model_type="ols")
+            if mat.empty:
+                st.warning("No scenario data available.")
+            else:
+                disp = mat.rename(columns={
+                    "country": "Market", "gdp_outlook_pct": "GDP '26 %",
+                    "fta": "FTA", "baseline_usd_m": "Baseline $M",
+                    "bull_usd_m": "Bull $M", "bull_change_pct": "Bull Δ%",
+                    "bear_usd_m": "Bear $M", "bear_change_pct": "Bear Δ%"})
+                st.dataframe(disp.set_index("Market"), use_container_width=True)
+                st.caption(f"GDP outlook source: {GDP_OUTLOOK_SOURCE}")
+
+                import matplotlib
+                matplotlib.use("Agg")
+                import matplotlib.pyplot as plt
+                import numpy as np
+                m = mat.iloc[::-1]
+                y = np.arange(len(m))
+                fig, ax = plt.subplots(figsize=(9, max(3, len(m) * 0.4)))
+                ax.barh(y + 0.2, m["bull_change_pct"], height=0.38,
+                        color="#2A9D8F", label="Bull")
+                ax.barh(y - 0.2, m["bear_change_pct"], height=0.38,
+                        color="#E76F51", label="Bear")
+                ax.set_yticks(y); ax.set_yticklabels(m["country"], fontsize=8)
+                ax.axvline(0, color="black", linewidth=0.8)
+                ax.set_xlabel("Change in export value vs baseline (%)")
+                ax.set_title("Scenario sensitivity by market", fontsize=11)
+                ax.legend(fontsize=8, loc="lower right")
+                ax.spines[["top", "right"]].set_visible(False)
+                plt.tight_layout()
+                st.pyplot(fig)
+                plt.close(fig)
+
         # ── Baseline top-10 export partners ─────────────────────────────────────
         st.divider()
         st.subheader("Baseline export volumes — top countries")

@@ -454,6 +454,68 @@ def ensure_model_ready(force_retrain: bool = False) -> dict:
 # Steel-specific trade elasticities (literature range: –0.5 to –2.0)
 TARIFF_ELASTICITY = -1.5   # ln(exports) change per 1-unit change in ln(1 + tariff/100)
 
+# ── Macro scenario assumptions ──────────────────────────────────────────────
+# Per-market 2026 real-GDP growth (%). Source: IMF World Economic Outlook,
+# Oct 2025 (rounded). A single elasticity model gives an IDENTICAL % response to
+# a uniform GDP shock across markets, which makes cross-market scenarios
+# meaningless; differentiating the *assumption* per market is what produces a
+# genuine market-specific scenario. Unlisted markets fall back to GDP_DEFAULT.
+GDP_OUTLOOK_SOURCE = "IMF World Economic Outlook, Oct 2025 (2026 real-GDP growth)"
+GDP_DEFAULT = 2.5
+GDP_OUTLOOK_2026: dict[str, float] = {
+    # South Asia
+    "NEPAL": 5.0, "BANGLADESH PR": 6.0, "SRI LANKA DSR": 3.5, "PAKISTAN IR": 3.0,
+    "BHUTAN": 4.5, "MALDIVES": 4.5, "AFGHANISTAN": 2.5,
+    # East Asia
+    "CHINA P RP": 4.2, "JAPAN": 0.6, "KOREA RP": 2.0, "TAIWAN": 2.5,
+    "HONG KONG": 2.4, "MONGOLIA": 5.0,
+    # Southeast Asia
+    "VIETNAM SOC REP": 6.0, "THAILAND": 2.8, "MALAYSIA": 4.5, "INDONESIA": 5.1,
+    "PHILIPPINES": 6.1, "SINGAPORE": 2.2, "MYANMAR": 2.6, "CAMBODIA": 5.8,
+    "LAO PD RP": 3.5, "BRUNEI": 2.5,
+    # West Asia
+    "U ARAB EMTS": 4.0, "SAUDI ARAB": 3.5, "TURKEY": 2.7, "IRAN": 2.0, "IRAQ": 3.0,
+    "ISRAEL": 3.0, "JORDAN": 2.7, "KUWAIT": 2.5, "OMAN": 2.5, "QATAR": 2.4,
+    "BAHARAIN IS": 3.0, "YEMEN REPUBLC": 2.0, "SYRIA": 2.0, "LEBANON": 1.0,
+    # Europe
+    "ITALY": 0.8, "GERMANY": 0.9, "SPAIN": 1.8, "FRANCE": 1.1, "UNITED KINGDOM": 1.3,
+    "U K": 1.3, "NETHERLANDS": 1.3, "NETHERLAND": 1.3, "BELGIUM": 1.0, "GREECE": 2.0,
+    "POLAND": 3.0, "SWEDEN": 1.8, "DENMARK": 1.5, "FINLAND": 1.2, "NORWAY": 1.4,
+    "PORTUGAL": 2.0, "CZECHIA": 2.0, "CZECH REP": 2.0, "AUSTRIA": 1.1, "HUNGARY": 2.5,
+    "ROMANIA": 3.0, "UKRAINE": 2.0, "RUSSIA": 1.0, "CROATIA": 2.5, "BULGARIA": 2.5,
+    "SLOVAKIA": 2.0, "SLOVENIA": 2.0, "SERBIA": 3.5, "SWITZERLAND": 1.4,
+    "IRELAND": 3.5, "LUXEMBOURG": 2.0,
+    # Americas
+    "USA": 1.8, "U S A": 1.8, "CANADA": 1.9, "BRAZIL": 2.2, "MEXICO": 1.5,
+    "ARGENTINA": 3.0, "CHILE": 2.3, "COLOMBIA": 2.8, "PERU": 2.8, "VENEZUELA": 3.0,
+    "CUBA": 1.0, "COSTA RICA": 3.5, "ECUADOR": 1.8, "TRINIDAD TBG": 2.0,
+    "DOMINICAN REP": 4.5,
+    # Africa
+    "SOUTH AFRICA": 1.5, "EGYPT A REP": 4.0, "EGYPT A RP": 4.0, "NIGERIA": 3.2,
+    "KENYA": 5.0, "ETHIOPIA": 6.5, "TANZANIA REP": 6.0, "GHANA": 4.5,
+    "MOZAMBIQUE": 5.0, "MAURITIUS": 4.0, "UGANDA": 6.0, "ANGOLA": 3.0, "ZAMBIA": 5.0,
+    "ZIMBABWE": 3.5, "ALGERIA": 3.0, "MOROCCO": 3.5, "TUNISIA": 2.0, "SENEGAL": 8.0,
+    "CAMEROON": 4.5, "SEYCHELLES": 3.5, "MADAGASCAR": 4.5, "SUDAN": 2.0,
+    "DJIBOUTI": 5.0,
+    # Oceania
+    "AUSTRALIA": 2.2, "NEW ZEALAND": 2.5, "FIJI IS": 3.0,
+}
+
+# Advanced markets with active steel import protection (Section 232, EU
+# safeguard/CBAM, etc.) — carry heavier bear-case tariff risk.
+PROTECTION_PRONE: set[str] = {
+    "USA", "U S A", "CANADA", "UNITED KINGDOM", "U K",
+    "GERMANY", "ITALY", "FRANCE", "SPAIN", "NETHERLANDS", "NETHERLAND", "BELGIUM",
+    "AUSTRIA", "POLAND", "SWEDEN", "DENMARK", "FINLAND", "PORTUGAL", "GREECE",
+    "CZECHIA", "CZECH REP", "HUNGARY", "ROMANIA", "CROATIA", "BULGARIA",
+    "SLOVAKIA", "SLOVENIA", "IRELAND", "LUXEMBOURG",
+}
+
+
+def country_gdp_outlook(country: str) -> float:
+    """2026 real-GDP growth assumption for a market (IMF WEO; default if unlisted)."""
+    return GDP_OUTLOOK_2026.get(country, GDP_DEFAULT)
+
 
 def predict_trade_flow(
     country: str,
@@ -544,11 +606,17 @@ def predict_trade_flow(
 
 
 def predict_top_scenarios(countries: list[str] | None = None,
-                          gdp_growth_pct: float = 5.0,
-                          model_type: str = "ols") -> pd.DataFrame:
+                          gdp_growth_pct: float | None = None,
+                          model_type: str = "ols",
+                          use_outlook: bool = True) -> pd.DataFrame:
     """
-    Run scenario for a list of countries and return ranked DataFrame.
-    Default: +5% GDP growth for all countries with data, OLS model.
+    Run a scenario for a list of countries and return a ranked DataFrame.
+
+    By default (use_outlook=True, gdp_growth_pct=None) each market uses its OWN
+    IMF 2026 GDP-growth outlook, so the % responses differ across markets. Pass
+    an explicit gdp_growth_pct to apply one uniform shock to every market (the
+    old behaviour) — note a single-elasticity model then returns identical %
+    changes everywhere.
     """
     mdl = ensure_model_ready()
     if countries is None:
@@ -557,7 +625,9 @@ def predict_top_scenarios(countries: list[str] | None = None,
     rows = []
     for c in countries:
         try:
-            r = predict_trade_flow(c, gdp_growth_pct=gdp_growth_pct, model_type=model_type)
+            g = (gdp_growth_pct if gdp_growth_pct is not None
+                 else (country_gdp_outlook(c) if use_outlook else 0.0))
+            r = predict_trade_flow(c, gdp_growth_pct=g, model_type=model_type)
             if r.get("status") != "no_data":
                 rows.append(r)
         except Exception:
@@ -567,6 +637,63 @@ def predict_top_scenarios(countries: list[str] | None = None,
     if df.empty:
         return df
     return df.sort_values("scenario_usd", ascending=False).reset_index(drop=True)
+
+
+def run_scenario_matrix(countries: list[str] | None = None,
+                        top_n: int = 15,
+                        model_type: str = "ols") -> pd.DataFrame:
+    """
+    Bull / base / bear export scenarios with MARKET-SPECIFIC assumptions.
+
+    For each market: baseline (no change), a bull case (GDP +1.5pp above the
+    IMF 2026 outlook, tariff easing — deeper for non-FTA markets), and a bear
+    case (global slowdown −3pp, protection — heaviest for protection-prone
+    advanced markets). Because the GDP outlook and tariff path differ by market,
+    the resulting bull/bear % changes are genuinely differentiated rather than a
+    flat uniform-shock response.
+
+    Returns DataFrame (descending baseline_usd_m):
+      country, gdp_outlook_pct, fta, baseline_usd_m,
+      bull_usd_m, bull_change_pct, bear_usd_m, bear_change_pct
+    """
+    mdl = ensure_model_ready()
+    latest_fy = mdl["df"]["fy"].max()
+    rta_map = (mdl["df"][mdl["df"]["fy"] == latest_fy]
+               .set_index("country")["rta"].to_dict())
+
+    if countries is None:
+        countries = mdl["df"]["country"].unique().tolist()
+
+    rows = []
+    for c in countries:
+        base = predict_trade_flow(c, model_type=model_type)
+        if base.get("status") == "no_data":
+            continue
+        g = country_gdp_outlook(c)
+        is_fta = int(rta_map.get(c, 0)) == 1
+
+        bull = predict_trade_flow(c, gdp_growth_pct=g + 1.5,
+                                  tariff_change_pct=(-5.0 if is_fta else -12.0),
+                                  model_type=model_type)
+        bear_tariff = (22.0 if c in PROTECTION_PRONE
+                       else (8.0 if is_fta else 15.0))
+        bear = predict_trade_flow(c, gdp_growth_pct=g - 3.0,
+                                  tariff_change_pct=bear_tariff,
+                                  model_type=model_type)
+        rows.append({
+            "country": c, "gdp_outlook_pct": g, "fta": is_fta,
+            "baseline_usd_m": round(base["baseline_usd"], 1),
+            "bull_usd_m": round(bull["scenario_usd"], 1),
+            "bull_change_pct": round(bull["change_pct"], 1),
+            "bear_usd_m": round(bear["scenario_usd"], 1),
+            "bear_change_pct": round(bear["change_pct"], 1),
+        })
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+    df = df.sort_values("baseline_usd_m", ascending=False).reset_index(drop=True)
+    return df.head(top_n) if top_n else df
 
 
 # ── Insights ──────────────────────────────────────────────────────────────────
@@ -636,10 +763,14 @@ if __name__ == "__main__":
     else:
         print(f"  Baseline:   ${r['baseline_usd']:.1f}M  →  Scenario: ${r['scenario_usd']:.1f}M  ({r['change_pct']:+.1f}%)")
 
-    print("\n── Top 10 countries by scenario exports (+5% GDP) ──────────")
-    top = predict_top_scenarios(gdp_growth_pct=5.0).head(10)
-    for _, row in top.iterrows():
-        print(f"  {row['country']:<22}  base=${row['baseline_usd']:.1f}M  "
-              f"scen=${row['scenario_usd']:.1f}M  ({row['change_pct']:+.1f}%)")
+    print("\n── Bull/Bear scenario matrix (market-specific assumptions) ──")
+    print(f"  GDP outlook source: {GDP_OUTLOOK_SOURCE}")
+    mat = run_scenario_matrix(top_n=10, model_type="ols")
+    print(f"  {'Country':<22} {'GDP26':>6} {'FTA':>4} {'Base $M':>9} "
+          f"{'Bull':>7} {'Bear':>7}")
+    for _, row in mat.iterrows():
+        print(f"  {row['country']:<22} {row['gdp_outlook_pct']:>5.1f}% "
+              f"{('Y' if row['fta'] else '-'):>4} {row['baseline_usd_m']:>9.1f} "
+              f"{row['bull_change_pct']:>+6.1f}% {row['bear_change_pct']:>+6.1f}%")
 
     print("\n" + "=" * 64)
