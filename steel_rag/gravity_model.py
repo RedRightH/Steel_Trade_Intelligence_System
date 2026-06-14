@@ -345,10 +345,9 @@ def train_gravity_models(df: pd.DataFrame) -> dict:
     Returns dict with model objects, metrics, and coefficient tables.
     """
     import statsmodels.formula.api as smf
-    from sklearn.ensemble import GradientBoostingRegressor
     from xgboost import XGBRegressor
     from sklearn.metrics import r2_score, mean_absolute_error
-    from sklearn.model_selection import train_test_split
+    from sklearn.model_selection import train_test_split, GroupKFold, cross_val_predict
 
     df = df.copy()
 
@@ -364,22 +363,33 @@ def train_gravity_models(df: pd.DataFrame) -> dict:
     ols_mae  = mean_absolute_error(df[TARGET], ols_pred)
 
     # ── XGBoost ───────────────────────────────────────────────────────────────
+    XGB_PARAMS = dict(n_estimators=300, max_depth=4, learning_rate=0.05,
+                      subsample=0.8, colsample_bytree=0.8,
+                      random_state=42, verbosity=0)
     X = df[FEATURES].values
     y = df[TARGET].values
+    groups = df["country"].values
+
+    # Honest generalisation metrics.
+    # WARNING: distance, contiguity, common_language and rta are time-invariant
+    # per country, so a *random* train/test split leaks country identity (the same
+    # country appears in both folds with identical features). We therefore report:
+    #   - in-sample R²    : fit to the full panel (optimistic; was wrongly headlined)
+    #   - held-out R²     : random 80/20 split (still leaky for known countries)
+    #   - leave-country-out: GroupKFold by country — the HONEST skill at predicting
+    #                        a market the model has never seen.
     X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=42)
+    _xgb_eval = XGBRegressor(**XGB_PARAMS).fit(X_tr, y_tr)
+    xgb_r2_holdout  = r2_score(y_te, _xgb_eval.predict(X_te))
+    xgb_mae_holdout = mean_absolute_error(y_te, _xgb_eval.predict(X_te))
+    loco_pred = cross_val_predict(XGBRegressor(**XGB_PARAMS), X, y,
+                                  groups=groups, cv=GroupKFold(n_splits=5))
+    xgb_r2_loco = r2_score(y, loco_pred)
 
-    xgb = XGBRegressor(
-        n_estimators=300, max_depth=4, learning_rate=0.05,
-        subsample=0.8, colsample_bytree=0.8,
-        random_state=42, verbosity=0,
-    )
-    xgb.fit(X_tr, y_tr,
-            eval_set=[(X_te, y_te)],
-            verbose=False)
-
+    # Production model: trained on the full panel (used for residual/gap rankings).
+    xgb = XGBRegressor(**XGB_PARAMS).fit(X, y)
     xgb_pred_all = xgb.predict(X)
-    xgb_r2  = r2_score(y, xgb_pred_all)
-    xgb_mae = mean_absolute_error(y, xgb_pred_all)
+    xgb_r2_insample = r2_score(y, xgb_pred_all)
 
     # ── Feature importance ───────────────────────────────────────────────────
     fi = dict(zip(FEATURES, xgb.feature_importances_))
@@ -392,8 +402,9 @@ def train_gravity_models(df: pd.DataFrame) -> dict:
         "significant": ols_result.pvalues < 0.05,
     }).drop(index="Intercept", errors="ignore")
 
-    print(f"[gravity] OLS  R²={ols_r2:.3f}  MAE(ln)={ols_mae:.3f}  n={len(df)}")
-    print(f"[gravity] XGB  R²={xgb_r2:.3f}  MAE(ln)={xgb_mae:.3f}")
+    print(f"[gravity] OLS  R²={ols_r2:.3f} (in-sample)  MAE(ln)={ols_mae:.3f}  n={len(df)}")
+    print(f"[gravity] XGB  R²  in-sample={xgb_r2_insample:.3f}  held-out={xgb_r2_holdout:.3f}  "
+          f"leave-country-out={xgb_r2_loco:.3f}")
 
     return {
         "ols":           ols_result,
@@ -403,7 +414,10 @@ def train_gravity_models(df: pd.DataFrame) -> dict:
         "feature_imp":   fi,
         "metrics": {
             "ols_r2": round(ols_r2, 4), "ols_mae": round(ols_mae, 4),
-            "xgb_r2": round(xgb_r2, 4), "xgb_mae": round(xgb_mae, 4),
+            "xgb_r2_insample": round(xgb_r2_insample, 4),
+            "xgb_r2_holdout":  round(xgb_r2_holdout, 4),
+            "xgb_r2_loco":     round(xgb_r2_loco, 4),
+            "xgb_mae":         round(xgb_mae_holdout, 4),
             "n_obs": len(df),
         },
         "df": df,   # keep dataset for baseline lookups
@@ -742,7 +756,10 @@ if __name__ == "__main__":
 
     print(f"\nDataset: {ins['n_obs']} obs  |  {ins['n_countries']} countries  |  {ins['fy_range'][0]}–{ins['fy_range'][1]}")
     print(f"OLS  R²={ins['metrics']['ols_r2']}  MAE(ln)={ins['metrics']['ols_mae']}")
-    print(f"XGB  R²={ins['metrics']['xgb_r2']}  MAE(ln)={ins['metrics']['xgb_mae']}")
+    print(f"XGB  R²  in-sample={ins['metrics']['xgb_r2_insample']}  "
+          f"held-out={ins['metrics']['xgb_r2_holdout']}  "
+          f"leave-country-out={ins['metrics']['xgb_r2_loco']}  "
+          f"MAE(ln)={ins['metrics']['xgb_mae']}")
 
     print("\n── OLS Coefficients ────────────────────────────────────────")
     print(ins["coef_df"].to_string())

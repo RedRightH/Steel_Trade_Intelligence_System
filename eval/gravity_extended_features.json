@@ -1,0 +1,72 @@
+{
+  "n_obs": 859,
+  "features_base": [
+    "ln_gdp_partner",
+    "ln_distance",
+    "contiguous",
+    "common_language",
+    "rta",
+    "fy_start"
+  ],
+  "features_new": [
+    "ln_gdp_pc",
+    "dest_tariff",
+    "tariff_missing",
+    "ln_steel_prod"
+  ],
+  "baseline": {
+    "OLS": {
+      "r2_insample": 0.431,
+      "r2_loco": 0.337
+    },
+    "XGB": {
+      "r2_insample": 0.936,
+      "r2_loco": 0.267
+    }
+  },
+  "extended": {
+    "OLS": {
+      "r2_insample": 0.451,
+      "r2_loco": 0.229
+    },
+    "XGB": {
+      "r2_insample": 0.962,
+      "r2_loco": 0.249
+    }
+  },
+  "loco_lift": {
+    "ols": -0.108,
+    "xgb": -0.018
+  },
+  "extended_new_coefficients": [
+    {
+      "variable": "ln_gdp_pc",
+      "coef": 0.023,
+      "p_value": 0.71,
+      "sig": false
+    },
+    {
+      "variable": "dest_tariff",
+      "coef": 0.0272,
+      "p_value": 0.1486,
+      "sig": false
+    },
+    {
+      "variable": "tariff_missing",
+      "coef": -1.9015,
+      "p_value": 0.0001,
+      "sig": true
+    },
+    {
+      "variable": "ln_steel_prod",
+      "coef": 0.1892,
+      "p_value": 0.0069,
+      "sig": true
+    }
+  ],
+  "data_sources": {
+    "gdp_pc": "World Bank NY.GDP.PCAP.CD",
+    "dest_tariff": "World Bank TM.TAX.MANF.WM.AR.ZS (manufactured-goods proxy, not steel-specific)",
+    "steel_prod": "worldsteel, World Steel in Figures 2024 (static 2023, major producers)"
+  }
+}

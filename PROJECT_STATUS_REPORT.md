@@ -31,7 +31,7 @@ news → futures → markets dependency chain with event-study calibration and a
 | Classifier gate | 5/5 | 5/5 (avg conf 0.976) | ✅ |
 | DPO training documented | result table | eval_loss 0.100, reward acc 100% | ✅ |
 | DPO faithfulness | ≥ Groq − 0.05 | 0.938 vs 1.000 (−0.062) | ❌ → keep Groq (valid null result per plan) |
-| Gravity OLS R² | ≥ 0.5 | OLS 0.431 / **XGB 0.922** | ⚠️ OLS below, XGB well above — documented |
+| Gravity OLS R² | ≥ 0.5 | OLS 0.431 (in-sample) · XGB 0.94 in-sample / **0.27 leave-country-out** | ⚠️ Honest out-of-sample skill below gate — documented, not inflated |
 | Gravity wired to agent + dashboard | structured field + slider | `gravity_scenario` + Tab 6 | ✅ |
 | Multimodal extraction | 3 test cases | 3/3 parsed | ✅ |
 | Semantic cache hit rate | 20–35% | **60%** | ✅ |
@@ -88,7 +88,7 @@ quoted as the honest performance envelope for this asset class.
 1. HRC futures forecasting carries irreducible regime risk (25–35% MAPE in break periods)
 2. Event-study sample is 22 events; several per-type factors rest on n=1 (clipped at runtime)
 3. GPR regressor is backtest-neutral; its value is live conditioning
-4. OLS gravity R² (0.43) below the 0.5 gate — XGBoost (0.92) used for predictions, OLS retained for interpretability
+4. Gravity model: the **OLS R² ≥ 0.5 on holdout** gate is **narrowly missed, not passed** — honest OLS holdout is 0.42 baseline / 0.48 with sub-region fixed effects (the earlier "XGBoost 0.92" was in-sample and leakage-inflated). Distance, contiguity, language and FTA are time-invariant per country, so leave-country-out CV is R²≈0.34 (OLS). XGBoost used for prediction, OLS for interpretability; gravity-gap rankings are treated as an indicative candidate-screen, then risk-filtered. Extended regressors (GDP/capita, destination tariff, steel production) were tested and rejected on leave-country-out grounds. Full accounting: [eval/gravity_gate_analysis.md](eval/gravity_gate_analysis.md)
 5. DPO model loses to Groq 70B (expected with 70 pairs); checkpoint retained for serving experiments
 6. Local-only deployment (by choice); vLLM requires Linux/WSL2
 

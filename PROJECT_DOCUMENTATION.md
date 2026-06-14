@@ -452,7 +452,7 @@ python steel_rag/run_eval.py
 
 **What it does:**
 - Builds a gravity panel: TRADESTAT exports + World Bank GDP + distances + RTA flags (859 obs, 100 countries, FY2018–26)
-- Trains OLS (R²=0.431, interpretable) and XGBoost (R²=0.922, production)
+- Trains OLS (R²=0.431 in-sample, interpretable) and XGBoost (in-sample R²≈0.94, but leave-country-out CV R²≈0.27 — the honest skill on an unseen market; features are time-invariant per country)
 - `predict_trade_flow(country, gdp_growth_pct, tariff_change_pct)` — scenario predictions
 - Wired into `PolicyAnalystOutput.gravity_scenario` and dashboard Tab 6 sliders
 

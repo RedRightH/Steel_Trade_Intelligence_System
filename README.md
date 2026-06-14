@@ -30,7 +30,7 @@ News event → 3-layer AI-GPR scoring → calibrated futures impact (event study
 | `steel_rag/router.py` | 7-category classifier (100% gate accuracy), 4 agents, Pydantic outputs, answer synthesizer fallback |
 | `steel_rag/data_agent.py` | 99 months of TRADESTAT export data (FY2018–2026), trend analysis, LLM chart generation |
 | `steel_rag/tariff_agent.py` | WTO WITS MFN tariffs (HS 72 & 73, 2010–2023), trends, rankings, natural-language lookup |
-| `steel_rag/gravity_model.py` | Trade gravity model (OLS R²=0.43, XGBoost R²=0.92), `predict_trade_flow()` scenarios |
+| `steel_rag/gravity_model.py` | Trade gravity model (OLS R²=0.43 in-sample; XGBoost leave-country-out R²≈0.27, in-sample ≈0.94), `predict_trade_flow()` scenarios |
 | `steel_rag/steel_futures.py` | HRC futures + steel equities, Prophet forecast with Steel-GPR news regressor, 3-layer AI-GPR news impact (Iacoviello & Tong 2026) |
 | `steel_rag/market_opportunity.py` | Ranks 83 export markets by gravity gap + momentum + size + FTA; maps news events to boosted/at-risk markets |
 | `steel_rag/classifier_pipeline.py` | Live RSS daemon: fetch → classify → embed → Pinecone upsert + Steel-GPR index build |

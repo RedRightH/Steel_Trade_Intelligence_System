@@ -52,7 +52,7 @@ V2/V3 — Production: Pinecone Hybrid + BGE Reranker
 | V2/V3 faithfulness Δ ≥ +0.10 vs V1 | +0.10 | +0.117 | ✅ PASS |
 | Corpus ≥ 1,000 chunks | 1,000 | 5,640 | ✅ PASS |
 | Classifier gate test 5/5 | 5/5 | 5/5 (avg conf: 0.976) | ✅ PASS |
-| Gravity OLS R² ≥ 0.5 | 0.50 | 0.431 (OLS) / **0.922 (XGB)** | ⚠️ OLS below, XGB well above |
+| Gravity OLS R² ≥ 0.5 | 0.50 | 0.431 (OLS in-sample) / XGB **0.27 leave-country-out** (0.94 in-sample) | ⚠️ Honest out-of-sample skill below gate |
 | Router accuracy ≥ 80% | 80% | **10/10 = 100%** (eval/router_accuracy.json) | ✅ PASS |
 | 5 agent event tests | Structured JSON + citation | See eval/agent_event_results.json | ✅ PASS |
 
@@ -98,14 +98,16 @@ A 3-layer geopolitical risk scoring system was implemented beyond the original p
 
 | Model | R² | MAE (ln exports) | Dataset |
 |-------|----|-----------------|---------|
-| OLS (baseline) | 0.431 | 1.368 | 859 obs, 100 countries, FY2018–26 |
-| XGBoost | **0.922** | **0.493** | Same |
+| OLS (baseline, in-sample) | 0.431 | 1.368 | 859 obs, 100 countries, FY2018–26 |
+| XGBoost (in-sample) | 0.94 | 0.49 | Fit to full panel — optimistic |
+| XGBoost (held-out, random split) | 0.836 | — | Leaks known countries |
+| XGBoost (leave-country-out CV) | **0.267** | 0.67 | Honest skill on an unseen market |
 
 **Top XGBoost features (by importance):** ln_gdp_partner (dominant), ln_distance, rta_india, common_language, contiguous.
 
 **Scenario function:** `predict_trade_flow(country, gdp_growth_pct, tariff_change_pct)` → predicted volume change %. Example: UAE +5% GDP growth → +3.8% India steel export increase.
 
-**OLS note:** R² = 0.431 is below the 0.5 gate target. This is expected for a gravity model on bilateral steel trade with high variance in emerging markets. XGBoost at R² = 0.922 captures non-linear relationships the linear model cannot. For the policy brief, XGBoost predictions are used; OLS coefficients are used for interpretability.
+**Honest-evaluation note (corrected):** the previously headlined "XGBoost R²=0.922" was computed on the full panel including training rows. Because distance, contiguity, language and FTA are time-invariant per country, a random train/test split leaks country identity; the honest leave-country-out CV is R²≈0.27. So **neither model cleanly clears the 0.5 gate out-of-sample** — the gravity-gap rankings are an indicative candidate-screen, not precise estimates. OLS coefficients are retained for interpretability (textbook signs: +GDP, −distance, +RTA).
 
 ---
 

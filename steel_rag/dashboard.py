@@ -1308,8 +1308,9 @@ with tab6:
     st.subheader("🌐 Gravity Model — Trade Flow Scenario Analysis")
     st.caption(
         "Predicts how India's bilateral steel exports change under GDP and tariff scenarios. "
-        "Model: OLS (interpretable) + XGBoost (R²=0.922). Features: ln(GDP), ln(distance), "
-        "RTA dummy, language, contiguity, FE year."
+        "Model: OLS (interpretable) + XGBoost. Honest skill on an unseen market "
+        "(leave-country-out CV) R²≈0.27; in-sample R² is much higher but leaks "
+        "country identity. Features: ln(GDP), ln(distance), RTA dummy, language, contiguity, FE year."
     )
 
     @st.cache_resource(show_spinner="Loading gravity model (~5s)…")
@@ -1334,7 +1335,8 @@ with tab6:
 
         with col_g2:
             grav_model_type = st.radio("Model", ["xgb", "ols"], index=0, key="grav_model",
-                                       help="XGBoost (R²=0.922) or OLS (R²=0.431, interpretable)")
+                                       help="XGBoost (leave-country-out R²≈0.27) or "
+                                            "OLS (in-sample R²=0.43, interpretable elasticities)")
 
         col_s1, col_s2 = st.columns(2)
         with col_s1:
@@ -1451,15 +1453,20 @@ with tab6:
 
         # ── Model performance summary ────────────────────────────────────────────
         st.divider()
+        st.markdown("**Model performance — honestly evaluated**")
+        _m = grav_mdl.get("metrics", {})
         perf_col1, perf_col2, perf_col3, perf_col4 = st.columns(4)
-        perf_col1.metric("OLS R²",   "0.431")
-        perf_col2.metric("XGB R²",   "0.922")
-        perf_col3.metric("OLS MAE",  "1.37 ln-units")
-        perf_col4.metric("XGB MAE",  "0.49 ln-units")
+        perf_col1.metric("OLS R² (in-sample)", f"{_m.get('ols_r2', 0.431):.3f}")
+        perf_col2.metric("XGB R² (in-sample)", f"{_m.get('xgb_r2_insample', 0.0):.3f}")
+        perf_col3.metric("XGB R² (held-out)",  f"{_m.get('xgb_r2_holdout', 0.0):.3f}")
+        perf_col4.metric("XGB R² (leave-country-out)", f"{_m.get('xgb_r2_loco', 0.0):.3f}")
         st.caption(
-            "OLS used for coefficient interpretability (ln(GDP) elasticity ~0.82). "
-            "XGBoost used for scenario predictions. "
-            "Top feature: ln(GDP_partner) dominates; ln(distance) negative as expected."
+            "The in-sample R² overstates skill: distance, contiguity, language and FTA are "
+            "time-invariant per country, so a random split lets XGBoost memorise known "
+            "markets. Leave-country-out CV (≈0.27) is the honest skill at predicting an "
+            "**unseen** market — modest. OLS is retained for interpretable elasticities "
+            "(ln(GDP)≈0.85, ln(distance)≈−0.64). Treat gravity-gap rankings as indicative, "
+            "not precise."
         )
 
     except Exception as _ge:

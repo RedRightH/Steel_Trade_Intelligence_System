@@ -11,7 +11,7 @@
 |------|--------|--------|--------|
 | DPO fine-tuning completed + documented | documented result | RTX 4090, 3m17s, eval_loss=0.100 | ✅ PASS |
 | DPO faithfulness gate | ≥ Groq − 0.05 | 0.938 vs Groq 1.000 (Δ = −0.062) | ❌ below threshold → keep Groq |
-| Gravity model OLS R² ≥ 0.5 | ≥ 0.50 | OLS 0.431 / XGBoost **0.922** | ⚠️ OLS below, XGB well above |
+| Gravity model OLS R² ≥ 0.5 | ≥ 0.50 | OLS 0.431 (in-sample) / XGBoost in-sample 0.94, **leave-country-out 0.27** | ⚠️ Honest out-of-sample skill below gate (see note) |
 | `predict_trade_flow()` scenario function | working | UAE +5% GDP → +3.8% exports | ✅ PASS |
 | Gravity wired to Policy Analyst output | structured field | `gravity_scenario` in PolicyAnalystOutput | ✅ PASS |
 | Gravity wired to dashboard slider | Bayesian slider | Tab 6 "Gravity Scenarios" added | ✅ PASS |
@@ -54,12 +54,14 @@
 
 | Model | R² | MAE (ln exports) | Notes |
 |-------|----|-----------------|-------|
-| OLS (baseline) | 0.431 | 1.368 | Coefficients interpretable |
-| XGBoost | **0.922** | **0.493** | Production for predictions |
+| OLS (baseline) | 0.431 (in-sample) | 1.368 | Coefficients interpretable |
+| XGBoost (in-sample) | 0.94 | 0.49 | Optimistic — fit to full panel |
+| XGBoost (held-out, random split) | 0.836 | — | Still leaks known countries |
+| XGBoost (leave-country-out CV) | **0.267** | 0.67 | Honest skill on an unseen market |
 
 **Top XGBoost features:** ln_gdp_partner (dominant), ln_distance (negative), rta_india, common_language, contiguous
 
-**OLS note:** R²=0.431 below the 0.5 gate because bilateral steel trade has high variance from AD/safeguard shocks not captured by gravity features. XGBoost at R²=0.922 passes. OLS coefficients are used for interpretability in the policy brief; XGBoost predictions are used for the scenario slider.
+**Honest-evaluation note (corrected):** the earlier headline "XGBoost R²=0.922" was computed on the full panel (including training rows) and overstated skill. Four of six features (distance, contiguity, language, FTA) are time-invariant per country, so a random split leaks country identity. The honest metric is leave-country-out CV (R²≈0.27, modest), meaning **neither model cleanly clears the 0.5 gate out-of-sample**. OLS coefficients remain useful for interpretability (textbook signs); XGBoost residuals drive the gravity-gap ranking, which is therefore an indicative candidate-screen rather than a precise estimate.
 
 **Scenario examples:**
 - UAE +5% GDP growth → +3.8% India steel export increase

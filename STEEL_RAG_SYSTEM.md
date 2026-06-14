@@ -23,7 +23,7 @@ The **Steel RAG (Retrieval-Augmented Generation) System** is an AI-powered intel
 - **Trade Data Analysis**: TRADESTAT export data (99 months, FY2018 – Feb 2026)
 - **Tariff Intelligence**: WTO WITS MFN lookup and trend analysis (2010-2023)
 - **Market Intelligence**: HRC futures + steel equities, Prophet forecast conditioned on a daily news-risk index, 3-layer AI-GPR news impact analysis
-- **Trade Flow Modeling**: Gravity model (XGBoost R²=0.92) with scenario predictions and a ranked market opportunity list
+- **Trade Flow Modeling**: Gravity model (OLS R²=0.43 in-sample; XGBoost leave-country-out R²≈0.27) with scenario predictions and a ranked market opportunity list
 - **Live News Pipeline**: RSS daemon classifying and upserting articles every 4 hours
 - **Conversation Memory**: Context-aware follow-up questions
 

@@ -386,7 +386,7 @@
   {
     "domain": "DATA_ANALYSIS",
     "question": "What is the gravity model prediction for India-UAE steel trade?",
-    "chosen": "The gravity model (859 observations, 100 countries, FY2018–26, XGBoost R²=0.922) predicts that a 5% UAE GDP growth would increase India-UAE flat steel trade by approximately 3.8%. With the CEPA RTA dummy active, the model shows an 18–22% structural uplift versus the no-FTA counterfactual, consistent with observed post-CEPA export increase from $0.8B to $1.2B.",
+    "chosen": "The gravity model (859 observations, 100 countries, FY2018–26; OLS in-sample R²=0.43, XGBoost leave-country-out CV R²≈0.27) predicts that a 5% UAE GDP growth would increase India-UAE flat steel trade by approximately 3.8%. With the CEPA RTA dummy active, the model shows an 18–22% structural uplift versus the no-FTA counterfactual, consistent with observed post-CEPA export increase from $0.8B to $1.2B.",
     "rejected": "The gravity model suggests India-UAE steel trade will increase under CEPA. GDP growth in UAE also supports higher trade volumes."
   },
   {
